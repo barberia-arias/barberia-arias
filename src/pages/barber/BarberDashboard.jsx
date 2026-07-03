@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
   getBarberoByUserId, getReservasByBarbero, getServicios,
-  getReservasByBarberoFecha, updateBarbero, uploadBarberoFoto,
+  getReservasByBarberoFecha, updateBarbero,
 } from '../../services/db';
 import { format } from 'date-fns';
 
@@ -19,7 +19,9 @@ export default function BarberDashboard() {
   const [reservasHoy, setReservasHoy] = useState([]);
   const [stats, setStats] = useState({ hoy: 0, pendientes: 0, total: 0 });
   const [servicios, setServicios] = useState([]);
-  const [uploading, setUploading] = useState(null);
+  const [fotoForm, setFotoForm] = useState({ foto: '', foto_hover: '' });
+  const [savingFotos, setSavingFotos] = useState(false);
+  const [fotoMsg, setFotoMsg] = useState('');
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -29,6 +31,7 @@ export default function BarberDashboard() {
       const b = await getBarberoByUserId(user.id);
       setBarbero(b);
       if (!b) return;
+      setFotoForm({ foto: b.foto || '', foto_hover: b.foto_hover || '' });
       const [todayR, allR, svs] = await Promise.all([
         getReservasByBarberoFecha(b.id, today),
         getReservasByBarbero(b.id),
@@ -46,16 +49,19 @@ export default function BarberDashboard() {
 
   const getServiceName = (id) => servicios.find((s) => s.id === id)?.nombre || '-';
 
-  const handleFotoUpload = async (field, file) => {
-    if (!file || !barbero) return;
-    setUploading(field);
+  const handleGuardarFotos = async () => {
+    if (!barbero) return;
+    setSavingFotos(true);
+    setFotoMsg('');
     try {
-      const url = await uploadBarberoFoto(barbero.id, field, file);
-      setBarbero((prev) => ({ ...prev, [field]: url }));
+      await updateBarbero(barbero.id, { foto: fotoForm.foto, foto_hover: fotoForm.foto_hover });
+      setBarbero((prev) => ({ ...prev, foto: fotoForm.foto, foto_hover: fotoForm.foto_hover }));
+      setFotoMsg('Fotos actualizadas correctamente.');
+      setTimeout(() => setFotoMsg(''), 4000);
     } catch (err) {
-      alert('Error al subir foto: ' + err.message);
+      setFotoMsg('Error al guardar: ' + err.message);
     } finally {
-      setUploading(null);
+      setSavingFotos(false);
     }
   };
 
@@ -112,7 +118,7 @@ export default function BarberDashboard() {
 
             <div className="bg-dark-2 border border-dark-4 p-6 lg:col-span-2">
               <h3 className="font-heading text-base font-semibold text-white mb-1">Mis Fotos de Perfil</h3>
-              <p className="text-gray-600 text-xs mb-5">Estas fotos aparecen en la página principal de la barbería.</p>
+              <p className="text-gray-600 text-xs mb-5">Pega el link de tu foto (subida a tu plataforma de imágenes). Aparecen en la página principal de la barbería.</p>
               <div className="grid sm:grid-cols-2 gap-5">
                 {[
                   { field: 'foto', label: 'Foto Principal', hint: 'Se muestra en la landing' },
@@ -122,26 +128,31 @@ export default function BarberDashboard() {
                     <p className="text-gray-400 text-xs font-medium uppercase tracking-wider mb-2">{label}</p>
                     <p className="text-gray-600 text-xs mb-3">{hint}</p>
                     <div className="relative w-full overflow-hidden bg-dark-3 border border-dark-4 mb-3" style={{ aspectRatio: '3 / 4' }}>
-                      {barbero[field] ? (
-                        <img src={barbero[field]} alt={label} className="absolute inset-0 w-full h-full object-cover object-top" />
+                      {fotoForm[field] ? (
+                        <img src={fotoForm[field]} alt={label} className="absolute inset-0 w-full h-full object-cover object-top" />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">
                           <p className="text-gray-600 text-xs text-center px-4">Sin foto</p>
                         </div>
                       )}
-                      {uploading === field && (
-                        <div className="absolute inset-0 bg-dark/70 flex items-center justify-center">
-                          <div className="w-6 h-6 border-2 border-gold border-t-transparent rounded-full animate-spin" />
-                        </div>
-                      )}
                     </div>
-                    <label className={`btn-outline-gold text-xs cursor-pointer block text-center ${uploading === field ? 'opacity-50 pointer-events-none' : ''}`}>
-                      {barbero[field] ? 'Cambiar foto' : 'Subir foto'}
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFotoUpload(field, e.target.files[0])} />
-                    </label>
+                    <input
+                      value={fotoForm[field]}
+                      onChange={(e) => setFotoForm((f) => ({ ...f, [field]: e.target.value }))}
+                      className="input-dark text-xs"
+                      placeholder="https://..."
+                    />
                   </div>
                 ))}
               </div>
+              {fotoMsg && <p className="text-xs mt-4 text-gold">{fotoMsg}</p>}
+              <button
+                onClick={handleGuardarFotos}
+                disabled={savingFotos}
+                className={`btn-gold text-xs mt-5 ${savingFotos ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                {savingFotos ? 'Guardando...' : 'Guardar fotos'}
+              </button>
             </div>
           </div>
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   getUsers, createUser, updateUser, deleteUser,
-  getBarberos, createBarbero, updateBarbero, uploadBarberoFoto,
+  getBarberos, createBarbero, updateBarbero,
   getSedes, getServicios,
 } from '../../services/db';
 
@@ -11,6 +11,7 @@ const emptyForm = {
   nombre: '', correo: '', password: '', rol: 'barbero', estado: true,
   especialidad: '', descripcion: '', horario_inicio: '09:00', horario_fin: '18:00',
   dias_laborales: [1, 2, 3, 4, 5, 6], sede_id: '', servicios_ids: [],
+  foto: '', foto_hover: '',
 };
 
 export default function ManageWorkers() {
@@ -26,7 +27,6 @@ export default function ManageWorkers() {
   const [saving, setSaving] = useState(false);
   const [listError, setListError] = useState('');
   const [deletingId, setDeletingId] = useState(null);
-  const [uploadingFoto, setUploadingFoto] = useState(null);
 
   const refresh = async () => {
     const [u, b] = await Promise.all([getUsers(), getBarberos()]);
@@ -66,6 +66,7 @@ export default function ManageWorkers() {
       dias_laborales: barbero?.dias_laborales || [1, 2, 3, 4, 5, 6],
       sede_id: barbero?.sede_id || sedes[0]?.id || '',
       servicios_ids: barbero?.servicios_ids || [],
+      foto: barbero?.foto || '', foto_hover: barbero?.foto_hover || '',
     });
     setError('');
     setShowForm(true);
@@ -100,6 +101,7 @@ export default function ManageWorkers() {
           descripcion: form.descripcion, horario_inicio: form.horario_inicio,
           horario_fin: form.horario_fin, dias_laborales: form.dias_laborales,
           estado: form.estado, sede_id: form.sede_id, servicios_ids: form.servicios_ids,
+          foto: form.foto, foto_hover: form.foto_hover,
         };
         if (barbero) await updateBarbero(barbero.id, barberoData);
         else await createBarbero({ ...barberoData, usuario_id: editingUser.id });
@@ -118,6 +120,7 @@ export default function ManageWorkers() {
             horario_inicio: form.horario_inicio, horario_fin: form.horario_fin,
             dias_laborales: form.dias_laborales, estado: form.estado,
             sede_id: form.sede_id, servicios_ids: form.servicios_ids,
+            foto: form.foto, foto_hover: form.foto_hover,
           });
         }
         setSuccess(`Trabajador ${form.nombre} creado correctamente.`);
@@ -145,20 +148,6 @@ export default function ManageWorkers() {
       setListError(err.message);
     } finally {
       setDeletingId(null);
-    }
-  };
-
-  const handleFotoUpload = async (barbero, field, file) => {
-    if (!file) return;
-    setListError('');
-    setUploadingFoto(`${barbero.id}-${field}`);
-    try {
-      await uploadBarberoFoto(barbero.id, field, file);
-      await refresh();
-    } catch (err) {
-      setListError('Error al subir la foto: ' + err.message);
-    } finally {
-      setUploadingFoto(null);
     }
   };
 
@@ -194,20 +183,13 @@ export default function ManageWorkers() {
                   <tr key={u.id} className="border-b border-dark-4/50 hover:bg-dark-3 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="relative w-8 h-8 flex-shrink-0">
-                          {b?.foto ? (
-                            <img src={b.foto} alt={u.nombre} className="w-8 h-8 rounded-full object-cover border border-gold/40" />
-                          ) : (
-                            <div className="w-8 h-8 bg-gold/20 border border-gold/40 flex items-center justify-center text-gold text-xs font-bold">
-                              {u.nombre.charAt(0)}
-                            </div>
-                          )}
-                          {(uploadingFoto === `${b?.id}-foto`) && (
-                            <div className="absolute inset-0 bg-dark/70 rounded-full flex items-center justify-center">
-                              <div className="w-3 h-3 border-2 border-gold border-t-transparent rounded-full animate-spin" />
-                            </div>
-                          )}
-                        </div>
+                        {b?.foto ? (
+                          <img src={b.foto} alt={u.nombre} className="w-8 h-8 rounded-full object-cover border border-gold/40 flex-shrink-0" />
+                        ) : (
+                          <div className="w-8 h-8 bg-gold/20 border border-gold/40 flex items-center justify-center text-gold text-xs font-bold flex-shrink-0">
+                            {u.nombre.charAt(0)}
+                          </div>
+                        )}
                         <span className="text-white font-medium">{u.nombre}</span>
                       </div>
                     </td>
@@ -221,18 +203,6 @@ export default function ManageWorkers() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4 flex-wrap">
                         <button onClick={() => openEdit(u)} className="text-gold hover:text-gold-light text-xs font-medium tracking-wide uppercase transition-colors">Editar</button>
-                        {b && (
-                          <>
-                            <label className={`text-blue-400 hover:text-blue-300 text-xs font-medium tracking-wide uppercase cursor-pointer transition-colors ${uploadingFoto === `${b.id}-foto` ? 'opacity-50 pointer-events-none' : ''}`}>
-                              {b.foto ? 'Cambiar foto' : 'Subir foto'}
-                              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFotoUpload(b, 'foto', e.target.files[0])} />
-                            </label>
-                            <label className={`text-blue-400 hover:text-blue-300 text-xs font-medium tracking-wide uppercase cursor-pointer transition-colors ${uploadingFoto === `${b.id}-foto_hover` ? 'opacity-50 pointer-events-none' : ''}`}>
-                              {b.foto_hover ? 'Cambiar hover' : 'Subir hover'}
-                              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFotoUpload(b, 'foto_hover', e.target.files[0])} />
-                            </label>
-                          </>
-                        )}
                         <button
                           onClick={() => handleDelete(u)}
                           disabled={deletingId === u.id}
@@ -291,13 +261,17 @@ export default function ManageWorkers() {
               )}
 
               {form.rol === 'barbero' && (
-                <div className="bg-dark-3 border border-dark-4 px-4 py-3 text-xs text-gray-500">
-                  La foto se sube después de {editingUser ? 'guardar los cambios' : 'crear al trabajador'}, con los botones "Subir foto" / "Subir hover" en la tabla.
-                </div>
-              )}
-
-              {form.rol === 'barbero' && (
                 <>
+                  <div className="grid sm:grid-cols-2 gap-5">
+                    <div>
+                      <label className="label-dark">URL de la foto</label>
+                      <input value={form.foto} onChange={(e) => setForm((f) => ({ ...f, foto: e.target.value }))} className="input-dark" placeholder="https://..." />
+                    </div>
+                    <div>
+                      <label className="label-dark">URL de la foto (hover)</label>
+                      <input value={form.foto_hover} onChange={(e) => setForm((f) => ({ ...f, foto_hover: e.target.value }))} className="input-dark" placeholder="https://... (opcional)" />
+                    </div>
+                  </div>
                   <div>
                     <label className="label-dark">Sede asignada *</label>
                     <select required value={form.sede_id} onChange={(e) => setForm((f) => ({ ...f, sede_id: e.target.value }))} className="input-dark">

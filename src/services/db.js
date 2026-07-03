@@ -276,24 +276,3 @@ export async function createServicioRealizado(data) {
   if (error) throw error;
   return nuevo;
 }
-
-// ── Storage (Fotos) ───────────────────────────────────────────────────────────
-async function uploadFoto(path, file) {
-  const ext = file.name.split('.').pop();
-  const { error } = await supabase.storage.from('fotos').upload(`${path}.${ext}`, file, { upsert: true });
-  if (error) throw error;
-  const { data: { publicUrl } } = supabase.storage.from('fotos').getPublicUrl(`${path}.${ext}`);
-  return publicUrl;
-}
-
-export async function uploadBarberoFoto(barberoId, field, file) {
-  const url = await uploadFoto(`barbers/${barberoId}/${field}`, file);
-  await updateBarbero(barberoId, { [field]: url });
-  return url;
-}
-
-export async function uploadSedeFoto(sedeId, file) {
-  const url = await uploadFoto(`sedes/${sedeId}/foto`, file);
-  await updateSede(sedeId, { foto: url });
-  return url;
-}

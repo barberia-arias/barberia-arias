@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { getSedes, createSede, updateSede, uploadSedeFoto } from '../../services/db';
+import { getSedes, createSede, updateSede } from '../../services/db';
 
-const emptyForm = { nombre: '', direccion: '', estado: true };
+const emptyForm = { nombre: '', direccion: '', estado: true, foto: '' };
 
 export default function ManageSedes() {
   const [sedes, setSedes] = useState([]);
@@ -10,13 +10,12 @@ export default function ManageSedes() {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [uploading, setUploading] = useState(null);
 
   const refresh = async () => setSedes(await getSedes());
   useEffect(() => { refresh(); }, []);
 
   const openCreate = () => { setEditing(null); setForm(emptyForm); setError(''); setShowForm(true); };
-  const openEdit = (s) => { setEditing(s); setForm({ nombre: s.nombre, direccion: s.direccion, estado: s.estado }); setError(''); setShowForm(true); };
+  const openEdit = (s) => { setEditing(s); setForm({ nombre: s.nombre, direccion: s.direccion, estado: s.estado, foto: s.foto || '' }); setError(''); setShowForm(true); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -44,19 +43,6 @@ export default function ManageSedes() {
     await refresh();
   };
 
-  const handleFotoUpload = async (sede, file) => {
-    if (!file) return;
-    setUploading(sede.id);
-    try {
-      await uploadSedeFoto(sede.id, file);
-      await refresh();
-    } catch (err) {
-      alert('Error al subir la foto: ' + err.message);
-    } finally {
-      setUploading(null);
-    }
-  };
-
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -81,11 +67,6 @@ export default function ManageSedes() {
                   <span className="text-gray-700 text-xs">Sin foto</span>
                 </div>
               )}
-              {uploading === s.id && (
-                <div className="absolute inset-0 bg-dark/70 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-gold border-t-transparent rounded-full animate-spin" />
-                </div>
-              )}
             </div>
 
             <div className="p-6">
@@ -98,10 +79,6 @@ export default function ManageSedes() {
 
               <div className="flex gap-4 pt-4 border-t border-dark-4 flex-wrap">
                 <button onClick={() => openEdit(s)} className="text-gold text-xs hover:text-gold-light uppercase tracking-wide transition-colors">Editar</button>
-                <label className={`text-blue-400 text-xs hover:text-blue-300 uppercase tracking-wide cursor-pointer transition-colors ${uploading === s.id ? 'opacity-50 pointer-events-none' : ''}`}>
-                  {s.foto ? 'Cambiar foto' : 'Subir foto'}
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFotoUpload(s, e.target.files[0])} />
-                </label>
                 <button onClick={() => toggleEstado(s)} className="text-gray-500 text-xs hover:text-gray-300 uppercase tracking-wide transition-colors">
                   {s.estado ? 'Desactivar' : 'Activar'}
                 </button>
@@ -128,6 +105,10 @@ export default function ManageSedes() {
               <div>
                 <label className="label-dark">Dirección *</label>
                 <textarea required rows={3} value={form.direccion} onChange={(e) => setForm((f) => ({ ...f, direccion: e.target.value }))} className="input-dark resize-none" placeholder="Av. Ejemplo N° 123, Urb. ..." />
+              </div>
+              <div>
+                <label className="label-dark">URL de la foto</label>
+                <input value={form.foto} onChange={(e) => setForm((f) => ({ ...f, foto: e.target.value }))} className="input-dark" placeholder="https://..." />
               </div>
               <div className="flex items-center gap-3">
                 <input type="checkbox" id="sedeEstado" checked={form.estado} onChange={(e) => setForm((f) => ({ ...f, estado: e.target.checked }))} className="accent-gold w-4 h-4" />
