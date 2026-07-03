@@ -101,7 +101,7 @@ export default function AdminLayout() {
             Panel de Administración — Barbería ARIAS
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/reservar" target="_blank" className="text-xs text-gray-500 hover:text-gold transition-colors hidden sm:block">
+            <Link to="/" target="_blank" className="text-xs text-gray-500 hover:text-gold transition-colors hidden sm:block">
               Ver sitio web →
             </Link>
             <div className="w-8 h-8 bg-gold flex items-center justify-center text-dark font-bold text-sm">
