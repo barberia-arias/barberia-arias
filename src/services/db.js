@@ -3,7 +3,15 @@ import { supabase } from '../lib/supabase';
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export async function login(correo, password) {
   const { data, error } = await supabase.auth.signInWithPassword({ email: correo, password });
-  if (error) throw new Error('Correo o contraseña incorrectos.');
+  if (error) {
+    if (error.message === 'Invalid login credentials') {
+      throw new Error('Correo o contraseña incorrectos.');
+    }
+    if (error.message === 'Email not confirmed') {
+      throw new Error('Debes confirmar tu correo antes de iniciar sesión.');
+    }
+    throw new Error(error.message);
+  }
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
   if (!profile) throw new Error('Perfil no encontrado. Contacta al administrador.');
   if (!profile.estado) throw new Error('Tu cuenta está inactiva.');
@@ -52,6 +60,15 @@ export async function createUser({ nombre, correo, password, rol, estado }) {
   }
 
   return { id: data.user.id, nombre, correo, rol, estado: estado ?? true };
+}
+
+export async function deleteUser(id) {
+  const { data, error } = await supabase.functions.invoke('delete-user', {
+    body: { userId: id },
+  });
+  if (error) throw new Error('No se pudo contactar el servicio de eliminación.');
+  if (!data?.success) throw new Error(data?.error || 'No se pudo eliminar la cuenta.');
+  return true;
 }
 
 export async function updateUser(id, data) {

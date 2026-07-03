@@ -5,7 +5,6 @@ import Services from '../components/landing/Services';
 import Barbers from '../components/landing/Barbers';
 import WhyUs from '../components/landing/WhyUs';
 import BookingCTA from '../components/landing/BookingCTA';
-import Location from '../components/landing/Location';
 
 export default function LandingPage() {
   return (
@@ -17,7 +16,6 @@ export default function LandingPage() {
         <Barbers />
         <WhyUs />
         <BookingCTA />
-        <Location />
       </main>
       <Footer />
     </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  getUsers, createUser, updateUser,
+  getUsers, createUser, updateUser, deleteUser,
   getBarberos, createBarbero, updateBarbero,
   getSedes, getServicios,
 } from '../../services/db';
@@ -24,6 +24,8 @@ export default function ManageWorkers() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
+  const [listError, setListError] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
 
   const refresh = async () => {
     const [u, b] = await Promise.all([getUsers(), getBarberos()]);
@@ -129,6 +131,22 @@ export default function ManageWorkers() {
     }
   };
 
+  const handleDelete = async (user) => {
+    if (!window.confirm(`¿Eliminar la cuenta de "${user.nombre}" de forma permanente? Esta acción no se puede deshacer.`)) return;
+    setListError('');
+    setDeletingId(user.id);
+    try {
+      await deleteUser(user.id);
+      setSuccess(`Cuenta de ${user.nombre} eliminada correctamente.`);
+      await refresh();
+      setTimeout(() => setSuccess(''), 4000);
+    } catch (err) {
+      setListError(err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const workers = users.filter((u) => u.rol !== 'admin');
 
   return (
@@ -142,6 +160,7 @@ export default function ManageWorkers() {
       </div>
 
       {success && <div className="bg-green-900/20 border border-green-700/50 text-green-400 px-4 py-3 text-sm mb-6">{success}</div>}
+      {listError && <div className="bg-red-900/20 border border-red-700/50 text-red-400 px-4 py-3 text-sm mb-6">{listError}</div>}
 
       <div className="bg-dark-2 border border-dark-4">
         <div className="overflow-x-auto">
@@ -174,7 +193,16 @@ export default function ManageWorkers() {
                       <span className={u.estado ? 'badge-confirmed' : 'badge-cancelled'}>{u.estado ? 'Activo' : 'Inactivo'}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <button onClick={() => openEdit(u)} className="text-gold hover:text-gold-light text-xs font-medium tracking-wide uppercase transition-colors">Editar</button>
+                      <div className="flex items-center gap-4">
+                        <button onClick={() => openEdit(u)} className="text-gold hover:text-gold-light text-xs font-medium tracking-wide uppercase transition-colors">Editar</button>
+                        <button
+                          onClick={() => handleDelete(u)}
+                          disabled={deletingId === u.id}
+                          className="text-red-500 hover:text-red-400 text-xs font-medium tracking-wide uppercase transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {deletingId === u.id ? 'Eliminando...' : 'Eliminar'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

@@ -12,7 +12,7 @@ export default function Services() {
   }, []);
 
   const formatPrice = (p) =>
-    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(p);
+    new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', maximumFractionDigits: 2 }).format(p);
 
   return (
     <section id="servicios" className="py-24 bg-dark">
