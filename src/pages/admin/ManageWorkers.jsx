@@ -4,6 +4,7 @@ import {
   getBarberos, createBarbero, updateBarbero,
   getSedes, getServicios,
 } from '../../services/db';
+import { uploadToCloudinary } from '../../lib/cloudinary';
 
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
@@ -27,6 +28,7 @@ export default function ManageWorkers() {
   const [saving, setSaving] = useState(false);
   const [listError, setListError] = useState('');
   const [deletingId, setDeletingId] = useState(null);
+  const [uploadingField, setUploadingField] = useState(null);
 
   const refresh = async () => {
     const [u, b] = await Promise.all([getUsers(), getBarberos()]);
@@ -151,6 +153,20 @@ export default function ManageWorkers() {
     }
   };
 
+  const handleFotoFile = async (field, file) => {
+    if (!file) return;
+    setUploadingField(field);
+    setError('');
+    try {
+      const url = await uploadToCloudinary(file);
+      setForm((f) => ({ ...f, [field]: url }));
+    } catch (err) {
+      setError('Error al subir la imagen: ' + err.message);
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
   const workers = users.filter((u) => u.rol !== 'admin');
 
   return (
@@ -263,14 +279,26 @@ export default function ManageWorkers() {
               {form.rol === 'barbero' && (
                 <>
                   <div className="grid sm:grid-cols-2 gap-5">
-                    <div>
-                      <label className="label-dark">URL de la foto</label>
-                      <input value={form.foto} onChange={(e) => setForm((f) => ({ ...f, foto: e.target.value }))} className="input-dark" placeholder="https://..." />
-                    </div>
-                    <div>
-                      <label className="label-dark">URL de la foto (hover)</label>
-                      <input value={form.foto_hover} onChange={(e) => setForm((f) => ({ ...f, foto_hover: e.target.value }))} className="input-dark" placeholder="https://... (opcional)" />
-                    </div>
+                    {[
+                      { field: 'foto', label: 'Foto', placeholder: 'https://...' },
+                      { field: 'foto_hover', label: 'Foto (hover)', placeholder: 'https://... (opcional)' },
+                    ].map(({ field, label, placeholder }) => (
+                      <div key={field}>
+                        <label className="label-dark">{label}</label>
+                        {form[field] && (
+                          <div className="relative w-full mb-2 bg-dark-3 border border-dark-4 overflow-hidden" style={{ aspectRatio: '3 / 4' }}>
+                            <img src={form[field]} alt="Vista previa" className="absolute inset-0 w-full h-full object-cover object-top" />
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <input value={form[field]} onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))} className="input-dark flex-1" placeholder={placeholder} />
+                          <label className={`btn-outline-gold text-xs px-3 flex items-center cursor-pointer whitespace-nowrap ${uploadingField === field ? 'opacity-50 pointer-events-none' : ''}`}>
+                            {uploadingField === field ? '...' : 'Subir'}
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFotoFile(field, e.target.files[0])} />
+                          </label>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                   <div>
                     <label className="label-dark">Sede asignada *</label>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getSedes, createSede, updateSede } from '../../services/db';
+import { uploadToCloudinary } from '../../lib/cloudinary';
 
 const emptyForm = { nombre: '', direccion: '', estado: true, foto: '' };
 
@@ -10,6 +11,7 @@ export default function ManageSedes() {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [uploadingFoto, setUploadingFoto] = useState(false);
 
   const refresh = async () => setSedes(await getSedes());
   useEffect(() => { refresh(); }, []);
@@ -41,6 +43,20 @@ export default function ManageSedes() {
   const toggleEstado = async (sede) => {
     await updateSede(sede.id, { estado: !sede.estado });
     await refresh();
+  };
+
+  const handleFotoFile = async (file) => {
+    if (!file) return;
+    setUploadingFoto(true);
+    setError('');
+    try {
+      const url = await uploadToCloudinary(file);
+      setForm((f) => ({ ...f, foto: url }));
+    } catch (err) {
+      setError('Error al subir la imagen: ' + err.message);
+    } finally {
+      setUploadingFoto(false);
+    }
   };
 
   return (
@@ -107,8 +123,19 @@ export default function ManageSedes() {
                 <textarea required rows={3} value={form.direccion} onChange={(e) => setForm((f) => ({ ...f, direccion: e.target.value }))} className="input-dark resize-none" placeholder="Av. Ejemplo N° 123, Urb. ..." />
               </div>
               <div>
-                <label className="label-dark">URL de la foto</label>
-                <input value={form.foto} onChange={(e) => setForm((f) => ({ ...f, foto: e.target.value }))} className="input-dark" placeholder="https://..." />
+                <label className="label-dark">Foto de la sede</label>
+                {form.foto && (
+                  <div className="relative w-full mb-2 bg-dark-3 border border-dark-4 overflow-hidden" style={{ aspectRatio: '16 / 9' }}>
+                    <img src={form.foto} alt="Vista previa" className="absolute inset-0 w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input value={form.foto} onChange={(e) => setForm((f) => ({ ...f, foto: e.target.value }))} className="input-dark flex-1" placeholder="https://..." />
+                  <label className={`btn-outline-gold text-xs px-4 flex items-center cursor-pointer whitespace-nowrap ${uploadingFoto ? 'opacity-50 pointer-events-none' : ''}`}>
+                    {uploadingFoto ? 'Subiendo...' : 'Subir imagen'}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFotoFile(e.target.files[0])} />
+                  </label>
+                </div>
               </div>
               <div className="flex items-center gap-3">
                 <input type="checkbox" id="sedeEstado" checked={form.estado} onChange={(e) => setForm((f) => ({ ...f, estado: e.target.checked }))} className="accent-gold w-4 h-4" />

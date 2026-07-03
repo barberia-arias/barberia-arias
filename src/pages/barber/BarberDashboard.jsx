@@ -4,6 +4,7 @@ import {
   getBarberoByUserId, getReservasByBarbero, getServicios,
   getReservasByBarberoFecha, updateBarbero,
 } from '../../services/db';
+import { uploadToCloudinary } from '../../lib/cloudinary';
 import { format } from 'date-fns';
 
 const statusBadge = {
@@ -22,6 +23,7 @@ export default function BarberDashboard() {
   const [fotoForm, setFotoForm] = useState({ foto: '', foto_hover: '' });
   const [savingFotos, setSavingFotos] = useState(false);
   const [fotoMsg, setFotoMsg] = useState('');
+  const [uploadingField, setUploadingField] = useState(null);
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -48,6 +50,20 @@ export default function BarberDashboard() {
   }, [user]);
 
   const getServiceName = (id) => servicios.find((s) => s.id === id)?.nombre || '-';
+
+  const handleFotoFile = async (field, file) => {
+    if (!file) return;
+    setUploadingField(field);
+    setFotoMsg('');
+    try {
+      const url = await uploadToCloudinary(file);
+      setFotoForm((f) => ({ ...f, [field]: url }));
+    } catch (err) {
+      setFotoMsg('Error al subir la imagen: ' + err.message);
+    } finally {
+      setUploadingField(null);
+    }
+  };
 
   const handleGuardarFotos = async () => {
     if (!barbero) return;
@@ -118,7 +134,7 @@ export default function BarberDashboard() {
 
             <div className="bg-dark-2 border border-dark-4 p-6 lg:col-span-2">
               <h3 className="font-heading text-base font-semibold text-white mb-1">Mis Fotos de Perfil</h3>
-              <p className="text-gray-600 text-xs mb-5">Pega el link de tu foto (subida a tu plataforma de imágenes). Aparecen en la página principal de la barbería.</p>
+              <p className="text-gray-600 text-xs mb-5">Sube tu foto o pega el link. Aparecen en la página principal de la barbería.</p>
               <div className="grid sm:grid-cols-2 gap-5">
                 {[
                   { field: 'foto', label: 'Foto Principal', hint: 'Se muestra en la landing' },
@@ -136,12 +152,18 @@ export default function BarberDashboard() {
                         </div>
                       )}
                     </div>
-                    <input
-                      value={fotoForm[field]}
-                      onChange={(e) => setFotoForm((f) => ({ ...f, [field]: e.target.value }))}
-                      className="input-dark text-xs"
-                      placeholder="https://..."
-                    />
+                    <div className="flex gap-2">
+                      <input
+                        value={fotoForm[field]}
+                        onChange={(e) => setFotoForm((f) => ({ ...f, [field]: e.target.value }))}
+                        className="input-dark text-xs flex-1"
+                        placeholder="https://..."
+                      />
+                      <label className={`btn-outline-gold text-xs px-3 flex items-center cursor-pointer whitespace-nowrap ${uploadingField === field ? 'opacity-50 pointer-events-none' : ''}`}>
+                        {uploadingField === field ? '...' : 'Subir'}
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFotoFile(field, e.target.files[0])} />
+                      </label>
+                    </div>
                   </div>
                 ))}
               </div>
