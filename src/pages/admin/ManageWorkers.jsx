@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   getUsers, createUser, updateUser, deleteUser,
-  getBarberos, createBarbero, updateBarbero,
+  getBarberos, createBarbero, updateBarbero, uploadBarberoFoto,
   getSedes, getServicios,
 } from '../../services/db';
 
@@ -26,6 +26,7 @@ export default function ManageWorkers() {
   const [saving, setSaving] = useState(false);
   const [listError, setListError] = useState('');
   const [deletingId, setDeletingId] = useState(null);
+  const [uploadingFoto, setUploadingFoto] = useState(null);
 
   const refresh = async () => {
     const [u, b] = await Promise.all([getUsers(), getBarberos()]);
@@ -147,6 +148,20 @@ export default function ManageWorkers() {
     }
   };
 
+  const handleFotoUpload = async (barbero, field, file) => {
+    if (!file) return;
+    setListError('');
+    setUploadingFoto(`${barbero.id}-${field}`);
+    try {
+      await uploadBarberoFoto(barbero.id, field, file);
+      await refresh();
+    } catch (err) {
+      setListError('Error al subir la foto: ' + err.message);
+    } finally {
+      setUploadingFoto(null);
+    }
+  };
+
   const workers = users.filter((u) => u.rol !== 'admin');
 
   return (
@@ -179,8 +194,19 @@ export default function ManageWorkers() {
                   <tr key={u.id} className="border-b border-dark-4/50 hover:bg-dark-3 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gold/20 border border-gold/40 flex items-center justify-center text-gold text-xs font-bold">
-                          {u.nombre.charAt(0)}
+                        <div className="relative w-8 h-8 flex-shrink-0">
+                          {b?.foto ? (
+                            <img src={b.foto} alt={u.nombre} className="w-8 h-8 rounded-full object-cover border border-gold/40" />
+                          ) : (
+                            <div className="w-8 h-8 bg-gold/20 border border-gold/40 flex items-center justify-center text-gold text-xs font-bold">
+                              {u.nombre.charAt(0)}
+                            </div>
+                          )}
+                          {(uploadingFoto === `${b?.id}-foto`) && (
+                            <div className="absolute inset-0 bg-dark/70 rounded-full flex items-center justify-center">
+                              <div className="w-3 h-3 border-2 border-gold border-t-transparent rounded-full animate-spin" />
+                            </div>
+                          )}
                         </div>
                         <span className="text-white font-medium">{u.nombre}</span>
                       </div>
@@ -193,8 +219,20 @@ export default function ManageWorkers() {
                       <span className={u.estado ? 'badge-confirmed' : 'badge-cancelled'}>{u.estado ? 'Activo' : 'Inactivo'}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 flex-wrap">
                         <button onClick={() => openEdit(u)} className="text-gold hover:text-gold-light text-xs font-medium tracking-wide uppercase transition-colors">Editar</button>
+                        {b && (
+                          <>
+                            <label className={`text-blue-400 hover:text-blue-300 text-xs font-medium tracking-wide uppercase cursor-pointer transition-colors ${uploadingFoto === `${b.id}-foto` ? 'opacity-50 pointer-events-none' : ''}`}>
+                              {b.foto ? 'Cambiar foto' : 'Subir foto'}
+                              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFotoUpload(b, 'foto', e.target.files[0])} />
+                            </label>
+                            <label className={`text-blue-400 hover:text-blue-300 text-xs font-medium tracking-wide uppercase cursor-pointer transition-colors ${uploadingFoto === `${b.id}-foto_hover` ? 'opacity-50 pointer-events-none' : ''}`}>
+                              {b.foto_hover ? 'Cambiar hover' : 'Subir hover'}
+                              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFotoUpload(b, 'foto_hover', e.target.files[0])} />
+                            </label>
+                          </>
+                        )}
                         <button
                           onClick={() => handleDelete(u)}
                           disabled={deletingId === u.id}
@@ -249,6 +287,12 @@ export default function ManageWorkers() {
               {editingUser && (
                 <div className="bg-dark-3 border border-dark-4 px-4 py-3 text-xs text-gray-500">
                   Para cambiar la contraseña de un barbero, ve al panel de Supabase → Authentication → Users.
+                </div>
+              )}
+
+              {form.rol === 'barbero' && (
+                <div className="bg-dark-3 border border-dark-4 px-4 py-3 text-xs text-gray-500">
+                  La foto se sube después de {editingUser ? 'guardar los cambios' : 'crear al trabajador'}, con los botones "Subir foto" / "Subir hover" en la tabla.
                 </div>
               )}
 
