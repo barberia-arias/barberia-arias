@@ -179,6 +179,12 @@ export async function getReservas() {
   return data || [];
 }
 
+export async function getReservaById(id) {
+  const { data, error } = await supabase.from('reservas').select('*').eq('id', id).single();
+  if (error) throw error;
+  return data;
+}
+
 export async function getReservasByBarbero(barberoId) {
   const { data, error } = await supabase.from('reservas').select('*').eq('barbero_id', barberoId);
   if (error) throw error;
@@ -254,6 +260,16 @@ export async function updateReserva(id, data) {
 
 export async function cancelarReserva(id) {
   return updateReserva(id, { estado: 'cancelada' });
+}
+
+// ── Pagos (Mercado Pago) ────────────────────────────────────────────────────────
+export async function crearPreferenciaPago(reservaId) {
+  const { data, error } = await supabase.functions.invoke('mp-create-preference', {
+    body: { reservaId, origin: window.location.origin },
+  });
+  if (error) throw new Error('No se pudo contactar el servicio de pagos.');
+  if (!data?.success) throw new Error(data?.error || 'No se pudo iniciar el pago.');
+  return data.redirectUrl;
 }
 
 // ── Servicios Realizados ──────────────────────────────────────────────────────

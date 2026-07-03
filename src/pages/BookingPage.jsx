@@ -1,20 +1,32 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/shared/Navbar';
 import Footer from '../components/shared/Footer';
 import {
   getSedes,
+  getBarberos,
   getBarberosBySede,
+  getServicios,
   getServiciosByBarbero,
   getHorasDisponibles,
   createReserva,
+  getReservaById,
+  crearPreferenciaPago,
 } from '../services/db';
 import { format, addDays } from 'date-fns';
 
 const STEPS = ['Sede', 'Barbero', 'Servicio', 'Fecha & Hora', 'Tus Datos', 'Confirmación'];
 const avatarColors = ['#C9A84C', '#8B6914', '#D4AF37'];
 
+const PAGO_STATUS_LABEL = {
+  approved: { text: 'Pago aprobado ✓', className: 'text-green-400' },
+  pending: { text: 'Pago pendiente de confirmación', className: 'text-yellow-400' },
+  in_process: { text: 'Pago en proceso', className: 'text-yellow-400' },
+  rejected: { text: 'El pago fue rechazado', className: 'text-red-400' },
+};
+
 export default function BookingPage() {
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(0);
   const [sedes, setSedes] = useState([]);
   const [barberos, setBarberos] = useState([]);
@@ -23,16 +35,39 @@ export default function BookingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [reservaCreada, setReservaCreada] = useState(null);
+  const [pagoResultado, setPagoResultado] = useState(null);
 
   const [form, setForm] = useState({
     sede_id: '', barbero_id: '', servicio_id: '',
     fecha: '', hora_inicio: '',
     cliente_nombre: '', cliente_telefono: '', cliente_correo: '', notas: '',
+    metodo_pago: 'local',
   });
 
   useEffect(() => {
     getSedes(true).then(setSedes);
   }, []);
+
+  // Si volvemos de Mercado Pago, la URL trae external_reference (id de la
+  // reserva) y status. Mostramos el resultado directamente en el paso final.
+  useEffect(() => {
+    const reservaId = searchParams.get('external_reference');
+    if (!reservaId) return;
+    (async () => {
+      try {
+        const [r, allBarberos, allServicios] = await Promise.all([
+          getReservaById(reservaId), getBarberos(), getServicios(),
+        ]);
+        setReservaCreada(r);
+        setBarberos(allBarberos);
+        setServicios(allServicios);
+        setPagoResultado(searchParams.get('status') || searchParams.get('collection_status'));
+        setStep(5);
+      } catch {
+        // reserva no encontrada, se ignora
+      }
+    })();
+  }, [searchParams]);
 
   useEffect(() => {
     if (form.sede_id) getBarberosBySede(form.sede_id, true).then(setBarberos);
@@ -49,9 +84,9 @@ export default function BookingPage() {
     }
   }, [form.barbero_id, form.fecha, form.servicio_id, servicios]);
 
-  const selectedSede = sedes.find((s) => s.id === form.sede_id);
-  const selectedBarber = barberos.find((b) => b.id === form.barbero_id);
-  const selectedService = servicios.find((s) => s.id === form.servicio_id);
+  const selectedSede = sedes.find((s) => s.id === (form.sede_id || reservaCreada?.sede_id));
+  const selectedBarber = barberos.find((b) => b.id === (form.barbero_id || reservaCreada?.barbero_id));
+  const selectedService = servicios.find((s) => s.id === (form.servicio_id || reservaCreada?.servicio_id));
 
   const minDate = format(new Date(), 'yyyy-MM-dd');
   const maxDate = format(addDays(new Date(), 30), 'yyyy-MM-dd');
@@ -78,8 +113,16 @@ export default function BookingPage() {
     setError('');
     setLoading(true);
     try {
+      const { metodo_pago, ...reservaData } = form;
       const hora_fin = addMinutes(form.hora_inicio, selectedService.duracion_minutos);
-      const reserva = await createReserva({ ...form, hora_fin });
+      const reserva = await createReserva({ ...reservaData, hora_fin });
+
+      if (metodo_pago === 'mercadopago') {
+        const redirectUrl = await crearPreferenciaPago(reserva.id);
+        window.location.href = redirectUrl;
+        return;
+      }
+
       setReservaCreada(reserva);
       setStep(5);
     } catch (e) {
@@ -275,6 +318,27 @@ export default function BookingPage() {
                     ))}
                   </div>
                 </div>
+                <div>
+                  <label className="label-dark mb-2 block">¿Cómo deseas pagar?</label>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, metodo_pago: 'local' }))}
+                      className={`text-left p-4 border-2 transition-all duration-200 ${form.metodo_pago === 'local' ? 'border-gold bg-gold/5' : 'border-dark-4 hover:border-gray-500'}`}
+                    >
+                      <p className="font-semibold text-white text-sm">Pagar en el local</p>
+                      <p className="text-gray-500 text-xs mt-1">Reserva ahora, paga cuando llegues.</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, metodo_pago: 'mercadopago' }))}
+                      className={`text-left p-4 border-2 transition-all duration-200 ${form.metodo_pago === 'mercadopago' ? 'border-gold bg-gold/5' : 'border-dark-4 hover:border-gray-500'}`}
+                    >
+                      <p className="font-semibold text-white text-sm">Pagar ahora online</p>
+                      <p className="text-gray-500 text-xs mt-1">Tarjeta, Yape y más, vía Mercado Pago.</p>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -284,6 +348,11 @@ export default function BookingPage() {
               <div className="w-20 h-20 border-2 border-gold flex items-center justify-center mx-auto mb-6 text-3xl">✓</div>
               <h2 className="font-heading text-3xl font-bold text-white mb-3">¡Reserva Confirmada!</h2>
               <p className="text-gray-400 mb-8">Hemos registrado tu cita exitosamente. Nos vemos pronto.</p>
+              {pagoResultado && PAGO_STATUS_LABEL[pagoResultado] && (
+                <p className={`font-semibold text-sm mb-6 ${PAGO_STATUS_LABEL[pagoResultado].className}`}>
+                  {PAGO_STATUS_LABEL[pagoResultado].text}
+                </p>
+              )}
               <div className="border border-gold/30 bg-gold/5 p-6 max-w-md mx-auto mb-8">
                 <div className="space-y-3">
                   {[
@@ -293,11 +362,11 @@ export default function BookingPage() {
                     { label: 'Servicio', value: selectedService?.nombre },
                     { label: 'Fecha', value: reservaCreada.fecha },
                     { label: 'Hora', value: reservaCreada.hora_inicio },
-                    { label: 'Estado', value: 'Pendiente de confirmación' },
+                    { label: 'Estado', value: pagoResultado ? reservaCreada.estado : 'Pendiente de confirmación' },
                   ].map((r) => (
                     <div key={r.label} className="flex justify-between text-sm">
                       <span className="text-gray-500">{r.label}</span>
-                      <span className="text-white font-medium">{r.value}</span>
+                      <span className="text-white font-medium capitalize">{r.value}</span>
                     </div>
                   ))}
                 </div>
@@ -319,7 +388,7 @@ export default function BookingPage() {
                 </button>
               ) : (
                 <button onClick={handleSubmit} disabled={!canNext() || loading} className={`btn-gold text-xs px-8 ${!canNext() || loading ? 'opacity-40 cursor-not-allowed' : ''}`}>
-                  {loading ? 'Procesando...' : 'Confirmar Reserva'}
+                  {loading ? 'Procesando...' : form.metodo_pago === 'mercadopago' ? 'Ir a Pagar →' : 'Confirmar Reserva'}
                 </button>
               )}
             </div>

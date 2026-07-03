@@ -63,7 +63,12 @@ create table if not exists reservas (
   hora_fin text,
   estado text default 'pendiente',
   fecha_creacion timestamptz default now(),
-  notas text default ''
+  notas text default '',
+  -- Pago con Mercado Pago (opcional; 'no_aplica' si el cliente paga en el local)
+  pago_estado text default 'no_aplica',
+  pago_monto numeric,
+  mp_preference_id text,
+  mp_payment_id text
 );
 
 -- Servicios realizados (registro de atenciones)

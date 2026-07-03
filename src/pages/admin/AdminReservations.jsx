@@ -9,6 +9,12 @@ const statusBadge = {
   cancelada: 'badge-cancelled',
   finalizada: 'badge-finished',
 };
+const pagoBadge = {
+  no_aplica: { text: 'En el local', className: 'badge-pending' },
+  pendiente: { text: 'Pago pendiente', className: 'badge-pending' },
+  pagado: { text: 'Pagado ✓', className: 'badge-confirmed' },
+  rechazado: { text: 'Pago rechazado', className: 'badge-cancelled' },
+};
 
 export default function AdminReservations() {
   const [reservas, setReservas] = useState([]);
@@ -130,6 +136,12 @@ export default function AdminReservations() {
                   <span className="text-white text-right">{item.value}</span>
                 </div>
               ))}
+              <div className="flex justify-between gap-2">
+                <span className="text-gray-600">Pago</span>
+                <span className={pagoBadge[selected.pago_estado || 'no_aplica']?.className || 'badge-pending'}>
+                  {pagoBadge[selected.pago_estado || 'no_aplica']?.text || 'En el local'}
+                </span>
+              </div>
               {selected.notas && (
                 <div className="pt-3 border-t border-dark-4">
                   <p className="text-gray-600 text-xs mb-1">Notas:</p>
