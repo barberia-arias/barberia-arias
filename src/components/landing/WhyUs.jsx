@@ -72,7 +72,7 @@ export default function WhyUs() {
           </blockquote>
           <div className="mt-6 flex items-center justify-center gap-3">
             <span className="w-8 h-px bg-gold" />
-            <span className="text-gold text-xs tracking-widest uppercase">Jharold Arias</span>
+            <span className="text-gold text-xs tracking-widest uppercase">Jharol Arias</span>
             <span className="w-8 h-px bg-gold" />
           </div>
         </div>

@@ -1,7 +1,7 @@
 export const INITIAL_USERS = [
   {
     id: 'user-admin-1',
-    nombre: 'Ricardo Arias',
+    nombre: 'Jharol Arias',
     correo: 'admin@barberia-arias.com',
     password: 'Admin2024*',
     rol: 'admin',
