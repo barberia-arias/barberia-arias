@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { getReservas, getBarberos, getServicios, updateReserva } from '../../services/db';
-import { format } from 'date-fns';
 
 const STATUS_OPTIONS = ['todos', 'pendiente', 'confirmada', 'cancelada', 'finalizada'];
 const statusBadge = {
@@ -8,12 +7,6 @@ const statusBadge = {
   confirmada: 'badge-confirmed',
   cancelada: 'badge-cancelled',
   finalizada: 'badge-finished',
-};
-const pagoBadge = {
-  no_aplica: { text: 'En el local', className: 'badge-pending' },
-  pendiente: { text: 'Pago pendiente', className: 'badge-pending' },
-  pagado: { text: 'Pagado ✓', className: 'badge-confirmed' },
-  rechazado: { text: 'Pago rechazado', className: 'badge-cancelled' },
 };
 
 export default function AdminReservations() {
@@ -138,9 +131,7 @@ export default function AdminReservations() {
               ))}
               <div className="flex justify-between gap-2">
                 <span className="text-gray-600">Pago</span>
-                <span className={pagoBadge[selected.pago_estado || 'no_aplica']?.className || 'badge-pending'}>
-                  {pagoBadge[selected.pago_estado || 'no_aplica']?.text || 'En el local'}
-                </span>
+                <span className="badge-pending">En el local</span>
               </div>
               {selected.notas && (
                 <div className="pt-3 border-t border-dark-4">

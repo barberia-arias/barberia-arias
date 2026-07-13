@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   getBarberoByUserId, getServiciosByBarbero, getSedes,
   createServicioRealizado, getServiciosRealizadosByBarbero,
+  saveCliente,
 } from '../../services/db';
 import { printRecibo } from '../../utils/recibo';
 import { format } from 'date-fns';
@@ -11,7 +12,11 @@ const formatPrice = (p) =>
   new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', maximumFractionDigits: 2 }).format(p);
 
 const MEDIOS_PAGO = ['EFECTIVO', 'YAPE', 'PLIN'];
-const emptyForm = { cliente_nombre: '', servicio_id: '', producto_vendido: '', precio_producto: '', medio_pago: '' };
+const emptyForm = {
+  cliente_nombre: '', cliente_apellidos: '', cliente_dni: '', cliente_fecha_nacimiento: '', cliente_telefono: '',
+  servicio_id: '', producto_vendido: '', precio_producto: '',
+};
+const emptyPagos = { EFECTIVO: '', YAPE: '', PLIN: '' };
 
 export default function BarberRegistrarServicio() {
   const { user } = useAuth();
@@ -20,6 +25,7 @@ export default function BarberRegistrarServicio() {
   const [servicios, setServicios] = useState([]);
   const [registros, setRegistros] = useState([]);
   const [form, setForm] = useState(emptyForm);
+  const [pagos, setPagos] = useState(emptyPagos);
   const [error, setError] = useState('');
   const [ultimoRegistro, setUltimoRegistro] = useState(null);
   const [verTodos, setVerTodos] = useState(false);
@@ -48,28 +54,60 @@ export default function BarberRegistrarServicio() {
   const selectedService = servicios.find((s) => s.id === form.servicio_id);
   const total = Number(selectedService?.precio || 0) + (form.producto_vendido && form.precio_producto ? Number(form.precio_producto) : 0);
 
+  const pagosActivos = MEDIOS_PAGO.filter((m) => pagos[m] !== '');
+  const totalPagado = pagosActivos.reduce((s, m) => s + Number(pagos[m] || 0), 0);
+  const diferencia = Number((total - totalPagado).toFixed(2));
+
+  const toggleMedio = (medio) => {
+    setPagos((p) => {
+      if (p[medio] !== '') return { ...p, [medio]: '' };
+      // al activar, sugiere el monto que falta por cubrir
+      const restante = Math.max(0, total - MEDIOS_PAGO.filter((m) => m !== medio && p[m] !== '').reduce((s, m) => s + Number(p[m] || 0), 0));
+      return { ...p, [medio]: restante > 0 ? String(restante) : '' };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     if (!form.cliente_nombre.trim()) { setError('Ingresa el nombre del cliente.'); return; }
     if (!form.servicio_id) { setError('Selecciona el servicio realizado.'); return; }
-    if (!form.medio_pago) { setError('Selecciona el medio de pago.'); return; }
+    if (pagosActivos.length === 0) { setError('Selecciona al menos un medio de pago.'); return; }
+    if (pagosActivos.some((m) => !Number(pagos[m]) || Number(pagos[m]) <= 0)) { setError('Ingresa un monto válido para cada medio de pago.'); return; }
+    if (Math.abs(diferencia) > 0.01) {
+      setError(`Los montos de pago (${formatPrice(totalPagado)}) no coinciden con el total (${formatPrice(total)}).`);
+      return;
+    }
     setSaving(true);
     const ahora = new Date();
+    const pagosList = pagosActivos.map((m) => ({ medio: m, monto: Number(pagos[m]) }));
     const data = {
       barbero_id: barbero.id, barbero_nombre: barbero.nombre,
       sede_id: barbero.sede_id, sede_nombre: sede?.nombre || '', sede_direccion: sede?.direccion || '',
-      cliente_nombre: form.cliente_nombre.trim(),
+      cliente_nombre: `${form.cliente_nombre.trim()} ${form.cliente_apellidos.trim()}`.trim(),
       servicio_id: form.servicio_id, servicio_nombre: selectedService.nombre, servicio_precio: selectedService.precio,
       producto_vendido: form.producto_vendido.trim(),
       precio_producto: form.producto_vendido.trim() && form.precio_producto ? Number(form.precio_producto) : 0,
-      medio_pago: form.medio_pago, total,
+      medio_pago: pagosList.map((p) => p.medio).join(' + '),
+      pagos: pagosList,
+      total,
       fecha: format(ahora, 'yyyy-MM-dd'), hora: format(ahora, 'HH:mm'),
     };
     try {
       const nuevo = await createServicioRealizado(data);
+      // Registro en la base de clientes del administrador (no bloquea si falla)
+      try {
+        await saveCliente({
+          nombres: form.cliente_nombre,
+          apellidos: form.cliente_apellidos,
+          dni: form.cliente_dni,
+          fecha_nacimiento: form.cliente_fecha_nacimiento,
+          telefono: form.cliente_telefono,
+        });
+      } catch { /* silencioso */ }
       setUltimoRegistro(nuevo);
       setForm(emptyForm);
+      setPagos(emptyPagos);
       await refresh();
     } catch (err) {
       setError(err.message);
@@ -80,6 +118,11 @@ export default function BarberRegistrarServicio() {
 
   const registrosHoy = registros.filter((r) => r.fecha === today);
   const listaVisible = verTodos ? registros : registrosHoy;
+
+  const describirPago = (r) =>
+    Array.isArray(r.pagos) && r.pagos.length > 0
+      ? r.pagos.map((p) => `${p.medio} ${formatPrice(p.monto)}`).join(' · ')
+      : (r.medio_pago || 'EFECTIVO');
 
   if (!barbero) {
     return (
@@ -111,16 +154,36 @@ export default function BarberRegistrarServicio() {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid sm:grid-cols-2 gap-5">
             <div>
-              <label className="label-dark">Nombre del cliente *</label>
-              <input type="text" value={form.cliente_nombre} onChange={(e) => setForm((f) => ({ ...f, cliente_nombre: e.target.value }))} className="input-dark" placeholder="Nombre completo o apodo" />
+              <label className="label-dark">Nombres del cliente *</label>
+              <input type="text" value={form.cliente_nombre} onChange={(e) => setForm((f) => ({ ...f, cliente_nombre: e.target.value }))} className="input-dark" placeholder="Nombres" />
             </div>
             <div>
-              <label className="label-dark">Servicio realizado *</label>
-              <select value={form.servicio_id} onChange={(e) => setForm((f) => ({ ...f, servicio_id: e.target.value }))} className="input-dark">
-                <option value="">— Selecciona un servicio —</option>
-                {servicios.map((s) => <option key={s.id} value={s.id}>{s.nombre} · S/ {s.precio.toFixed(2)}</option>)}
-              </select>
+              <label className="label-dark">Apellidos (opcional)</label>
+              <input type="text" value={form.cliente_apellidos} onChange={(e) => setForm((f) => ({ ...f, cliente_apellidos: e.target.value }))} className="input-dark" placeholder="Apellidos" />
             </div>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-5">
+            <div>
+              <label className="label-dark">DNI (opcional)</label>
+              <input type="text" maxLength={8} value={form.cliente_dni} onChange={(e) => setForm((f) => ({ ...f, cliente_dni: e.target.value.replace(/\D/g, '') }))} className="input-dark" placeholder="12345678" />
+            </div>
+            <div>
+              <label className="label-dark">F. nacimiento (opcional)</label>
+              <input type="date" max={today} value={form.cliente_fecha_nacimiento} onChange={(e) => setForm((f) => ({ ...f, cliente_fecha_nacimiento: e.target.value }))} className="input-dark" />
+            </div>
+            <div>
+              <label className="label-dark">Teléfono (opcional)</label>
+              <input type="tel" value={form.cliente_telefono} onChange={(e) => setForm((f) => ({ ...f, cliente_telefono: e.target.value }))} className="input-dark" placeholder="900 000 000" />
+            </div>
+          </div>
+
+          <div>
+            <label className="label-dark">Servicio realizado *</label>
+            <select value={form.servicio_id} onChange={(e) => setForm((f) => ({ ...f, servicio_id: e.target.value }))} className="input-dark">
+              <option value="">— Selecciona un servicio —</option>
+              {servicios.map((s) => <option key={s.id} value={s.id}>{s.nombre} · S/ {s.precio.toFixed(2)}</option>)}
+            </select>
           </div>
 
           {form.servicio_id && (
@@ -143,28 +206,55 @@ export default function BarberRegistrarServicio() {
           )}
 
           <div>
-            <label className="label-dark mb-3 block">Medio de pago *</label>
-            <div className="flex gap-3">
-              {MEDIOS_PAGO.map((medio) => (
-                <button key={medio} type="button" onClick={() => setForm((f) => ({ ...f, medio_pago: medio }))}
-                  className={`flex-1 py-3 text-sm font-bold tracking-widest border-2 transition-all duration-200 ${form.medio_pago === medio ? 'bg-gold text-dark border-gold' : 'border-dark-4 text-gray-400 hover:border-gold/50 hover:text-gray-200'}`}>
-                  {medio}
-                </button>
-              ))}
+            <label className="label-dark mb-1 block">Medios de pago *</label>
+            <p className="text-gray-600 text-xs mb-3">Puedes combinar varios medios. Ej: Yape S/ 20 + Efectivo S/ 10.</p>
+            <div className="grid sm:grid-cols-3 gap-3">
+              {MEDIOS_PAGO.map((medio) => {
+                const activo = pagos[medio] !== '';
+                return (
+                  <div key={medio} className={`border-2 transition-all duration-200 ${activo ? 'border-gold bg-gold/5' : 'border-dark-4'}`}>
+                    <button type="button" onClick={() => toggleMedio(medio)}
+                      className={`w-full py-3 text-sm font-bold tracking-widest transition-all duration-200 ${activo ? 'text-gold' : 'text-gray-400 hover:text-gray-200'}`}>
+                      {activo ? '✓ ' : ''}{medio}
+                    </button>
+                    {activo && (
+                      <div className="px-3 pb-3">
+                        <input
+                          type="number" min="0" step="0.50" value={pagos[medio]}
+                          onChange={(e) => setPagos((p) => ({ ...p, [medio]: e.target.value }))}
+                          className="input-dark text-sm" placeholder="Monto S/"
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
           {form.servicio_id && (
-            <div className="bg-dark-3 border border-gold/20 px-4 py-3 flex justify-between items-center">
-              <span className="text-white font-semibold text-sm">Total a cobrar</span>
-              <span className="text-gold font-heading font-bold text-xl">{formatPrice(total)}</span>
+            <div className="bg-dark-3 border border-gold/20 px-4 py-3 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-white font-semibold text-sm">Total a cobrar</span>
+                <span className="text-gold font-heading font-bold text-xl">{formatPrice(total)}</span>
+              </div>
+              {pagosActivos.length > 0 && (
+                <div className="flex justify-between items-center text-xs border-t border-dark-4 pt-2">
+                  <span className="text-gray-500">Suma de pagos: {formatPrice(totalPagado)}</span>
+                  {Math.abs(diferencia) > 0.01 ? (
+                    <span className="text-yellow-400">{diferencia > 0 ? `Falta ${formatPrice(diferencia)}` : `Sobra ${formatPrice(-diferencia)}`}</span>
+                  ) : (
+                    <span className="text-green-400">✓ Cuadra con el total</span>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
           {error && <div className="bg-red-900/20 border border-red-700/50 text-red-400 px-4 py-3 text-sm">{error}</div>}
 
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={() => { setForm(emptyForm); setError(''); setUltimoRegistro(null); }} className="btn-outline-gold text-xs px-8">Limpiar</button>
+            <button type="button" onClick={() => { setForm(emptyForm); setPagos(emptyPagos); setError(''); setUltimoRegistro(null); }} className="btn-outline-gold text-xs px-8">Limpiar</button>
             <button type="submit" disabled={saving} className={`btn-gold text-xs flex-1 ${saving ? 'opacity-60 cursor-not-allowed' : ''}`}>
               {saving ? 'Registrando...' : 'Registrar y Generar Recibo'}
             </button>
@@ -176,7 +266,7 @@ export default function BarberRegistrarServicio() {
         <div className="flex items-center justify-between px-6 py-4 border-b border-dark-4">
           <div>
             <h3 className="font-heading text-lg font-semibold text-white">{verTodos ? 'Todos mis servicios' : 'Servicios de hoy'}</h3>
-            <p className="text-gray-600 text-xs mt-0.5">{verTodos ? `${registros.length} registros totales` : `${registrosHoy.length} atenciones hoy`}</p>
+            <p className="text-gray-600 text-xs mt-0.5">{verTodos ? `${registros.length} registros totales` : `${registrosHoy.length} atenciones hoy`} · Solo el administrador puede editar o eliminar registros</p>
           </div>
           <button onClick={() => setVerTodos(!verTodos)} className="text-gold text-xs uppercase tracking-wide hover:text-gold-light transition-colors">
             {verTodos ? 'Ver solo hoy' : 'Ver todos'}
@@ -198,6 +288,7 @@ export default function BarberRegistrarServicio() {
                   <p className="text-white font-medium text-sm truncate">{r.cliente_nombre}</p>
                   <p className="text-gray-500 text-xs">{r.servicio_nombre}</p>
                   {r.producto_vendido && <p className="text-gray-600 text-xs mt-0.5">+ {r.producto_vendido}</p>}
+                  <p className="text-gray-600 text-xs mt-0.5">{describirPago(r)}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-white font-heading font-bold">{formatPrice(r.total)}</p>

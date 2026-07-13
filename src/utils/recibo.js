@@ -1,4 +1,9 @@
 export function printRecibo(servicio) {
+  const tienePagosDetallados = Array.isArray(servicio.pagos) && servicio.pagos.length > 0;
+  const lineaFormaPago = tienePagosDetallados
+    ? servicio.pagos.map((p) => `${p.medio} S/ ${Number(p.monto).toFixed(2)}`).join(' + ')
+    : (servicio.medio_pago || 'CONTADO');
+
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -40,7 +45,7 @@ export function printRecibo(servicio) {
 <div class="center">
   <div class="bold">RECIBO DE SERVICIO</div>
   <p>N&deg;: ${servicio.numero_recibo}</p>
-  <p>F. PAGO: ${servicio.medio_pago || 'CONTADO'}</p>
+  <p>F. PAGO: ${lineaFormaPago}</p>
   <p>${servicio.fecha}&nbsp;&nbsp;${servicio.hora}</p>
 </div>
 <div class="dots">${'::::::::::::::::::::::::::::::::'}</div>
@@ -58,6 +63,10 @@ ${servicio.producto_vendido ? `<div class="row">
 </div>` : ''}
 <div class="dots">${'::::::::::::::::::::::::::::::::'}</div>
 <div class="total-row"><span>TOTAL</span><span>S/ ${Number(servicio.total).toFixed(2)}</span></div>
+${tienePagosDetallados && servicio.pagos.length > 1 ? servicio.pagos.map((p) => `<div class="row">
+  <span>Pago ${p.medio}</span>
+  <span>S/ ${Number(p.monto).toFixed(2)}</span>
+</div>`).join('') : ''}
 <div class="dots">${'::::::::::::::::::::::::::::::::'}</div>
 <p>Sede: ${servicio.sede_nombre}</p>
 <p>Atendido por: ${servicio.barbero_nombre}</p>

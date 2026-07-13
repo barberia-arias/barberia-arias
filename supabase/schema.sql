@@ -63,12 +63,7 @@ create table if not exists reservas (
   hora_fin text,
   estado text default 'pendiente',
   fecha_creacion timestamptz default now(),
-  notas text default '',
-  -- Pago con Mercado Pago (opcional; 'no_aplica' si el cliente paga en el local)
-  pago_estado text default 'no_aplica',
-  pago_monto numeric,
-  mp_preference_id text,
-  mp_payment_id text
+  notas text default ''
 );
 
 -- Servicios realizados (registro de atenciones)
@@ -87,9 +82,23 @@ create table if not exists servicios_realizados (
   producto_vendido text,
   precio_producto numeric default 0,
   medio_pago text,
+  -- Detalle de pagos; permite combinar medios:
+  -- [{"medio":"YAPE","monto":20},{"medio":"EFECTIVO","monto":10}]
+  pagos jsonb default '[]',
   total numeric,
   fecha date,
   hora text,
+  fecha_creacion timestamptz default now()
+);
+
+-- Clientes (base de datos del administrador; solo el nombre es obligatorio)
+create table if not exists clientes (
+  id uuid default gen_random_uuid() primary key,
+  nombres text not null,
+  apellidos text default '',
+  dni text default '',
+  fecha_nacimiento date,
+  telefono text default '',
   fecha_creacion timestamptz default now()
 );
 
@@ -121,6 +130,7 @@ alter table barberos disable row level security;
 alter table servicios disable row level security;
 alter table reservas disable row level security;
 alter table servicios_realizados disable row level security;
+alter table clientes disable row level security;
 
 -- ── Datos iniciales ──────────────────────────────────────────────────────────
 insert into sedes (nombre, direccion, estado, foto) values

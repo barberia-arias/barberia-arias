@@ -8,14 +8,8 @@ export default function Footer() {
 
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 border-2 border-gold flex items-center justify-center rotate-45">
-                <span className="font-heading font-bold text-gold text-sm -rotate-45">A</span>
-              </div>
-              <div>
-                <span className="font-heading font-bold text-white text-xl tracking-wider">ARIAS</span>
-                <span className="block text-gold text-xs tracking-widest uppercase">Barbería</span>
-              </div>
+            <div className="mb-5">
+              <img src="/logo.png" alt="Barbershop ARIAS" className="h-14 w-auto object-contain" />
             </div>
             <p className="text-gray-500 text-sm leading-relaxed mb-5">
               Más de una década refinando el arte del corte masculino. Tu imagen, nuestra pasión.
@@ -36,6 +30,7 @@ export default function Footer() {
               {[
                 { label: 'Inicio', href: '/' },
                 { label: 'Servicios', href: '/#servicios' },
+                { label: 'Nosotros', href: '/#nosotros' },
                 { label: 'Nuestro Equipo', href: '/#barberos' },
                 { label: 'Reservar Cita', href: '/reservar' },
                 { label: 'Contacto', href: '/#contacto' },
@@ -56,15 +51,11 @@ export default function Footer() {
             <ul className="space-y-4">
               <li className="flex gap-3">
                 <span className="text-gold mt-0.5">📍</span>
-                <span className="text-gray-500 text-sm">Calle Principal 123, Centro<br />Tu Ciudad</span>
+                <span className="text-gray-500 text-sm">Av. Mariano Condorcanqui Mz. R Lt. 27<br />Urb Santo Domingo</span>
               </li>
               <li className="flex gap-3">
                 <span className="text-gold mt-0.5">📞</span>
-                <span className="text-gray-500 text-sm">+57 300 000 0000</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="text-gold mt-0.5">✉️</span>
-                <span className="text-gray-500 text-sm">info@barberia-arias.com</span>
+                <span className="text-gray-500 text-sm">986 489 429</span>
               </li>
               <li className="flex gap-3">
                 <span className="text-gold mt-0.5">🕐</span>

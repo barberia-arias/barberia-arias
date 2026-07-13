@@ -35,6 +35,7 @@ export default function Navbar() {
           {/* Desktop menu */}
           <div className="hidden md:flex items-center gap-8">
             <a href="/#servicios" className="text-gray-300 hover:text-gold transition-colors duration-200 text-sm tracking-wide uppercase font-medium">Servicios</a>
+            <a href="/#nosotros" className="text-gray-300 hover:text-gold transition-colors duration-200 text-sm tracking-wide uppercase font-medium">Nosotros</a>
             <a href="/#barberos" className="text-gray-300 hover:text-gold transition-colors duration-200 text-sm tracking-wide uppercase font-medium">Equipo</a>
             <a href="/#contacto" className="text-gray-300 hover:text-gold transition-colors duration-200 text-sm tracking-wide uppercase font-medium">Contacto</a>
 
@@ -71,6 +72,7 @@ export default function Navbar() {
         {menuOpen && (
           <div className="md:hidden bg-dark-2 border-t border-dark-4 py-4 flex flex-col gap-4 px-4">
             <a href="/#servicios" className="text-gray-300 hover:text-gold text-sm tracking-wide uppercase font-medium py-2">Servicios</a>
+            <a href="/#nosotros" className="text-gray-300 hover:text-gold text-sm tracking-wide uppercase font-medium py-2">Nosotros</a>
             <a href="/#barberos" className="text-gray-300 hover:text-gold text-sm tracking-wide uppercase font-medium py-2">Equipo</a>
             <a href="/#contacto" className="text-gray-300 hover:text-gold text-sm tracking-wide uppercase font-medium py-2">Contacto</a>
             {user ? (

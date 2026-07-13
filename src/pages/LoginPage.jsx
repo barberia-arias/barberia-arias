@@ -40,13 +40,8 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-10">
           <Link to="/" className="inline-flex flex-col items-center gap-3 group">
-            <div className="w-14 h-14 border-2 border-gold flex items-center justify-center rotate-45 group-hover:rotate-0 transition-transform duration-500">
-              <span className="font-heading font-bold text-gold text-xl -rotate-45 group-hover:rotate-0 transition-transform duration-500">A</span>
-            </div>
-            <div>
-              <span className="font-heading font-bold text-white text-2xl tracking-wider block">ARIAS</span>
-              <span className="text-gold text-xs tracking-widest uppercase">Barbería — Acceso Interno</span>
-            </div>
+            <img src="/logo.png" alt="Barbershop ARIAS" className="h-20 w-auto object-contain group-hover:opacity-80 transition-opacity duration-300" />
+            <span className="text-gold text-xs tracking-widest uppercase">Barbería — Acceso Interno</span>
           </Link>
         </div>
 

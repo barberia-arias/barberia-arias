@@ -12,14 +12,9 @@ export default function BarberLayout() {
       {/* Sidebar */}
       <aside className="hidden lg:flex flex-col w-56 bg-dark-2 border-r border-dark-4 fixed left-0 top-0 bottom-0 z-20">
         <div className="px-6 py-6 border-b border-dark-4">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 border-2 border-gold flex items-center justify-center rotate-45">
-              <span className="font-heading font-bold text-gold text-sm -rotate-45">A</span>
-            </div>
-            <div>
-              <span className="font-heading font-bold text-white text-base tracking-wider">ARIAS</span>
-              <span className="block text-gold text-xs tracking-widest">Mi Panel</span>
-            </div>
+          <Link to="/" className="flex flex-col items-start gap-2">
+            <img src="/logo.png" alt="Barbershop ARIAS" className="h-10 w-auto object-contain" />
+            <span className="text-gold text-xs tracking-widest uppercase">Mi Panel</span>
           </Link>
         </div>
 

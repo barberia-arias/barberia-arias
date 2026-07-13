@@ -46,10 +46,7 @@ export default function BookingCTA() {
           <div className="relative">
             <div className="border border-dark-4 p-8 bg-dark-3">
               <div className="text-center mb-8">
-                <div className="w-16 h-16 border-2 border-gold flex items-center justify-center rotate-45 mx-auto mb-4">
-                  <span className="font-heading font-bold text-gold text-xl -rotate-45">A</span>
-                </div>
-                <h3 className="font-heading text-2xl font-bold text-white">Barbería ARIAS</h3>
+                <img src="/logo.png" alt="Barbershop ARIAS" className="h-16 w-auto object-contain mx-auto mb-4" />
                 <p className="text-gold text-xs tracking-widest uppercase mt-1">Reserva Express</p>
               </div>
 

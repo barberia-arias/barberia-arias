@@ -262,16 +262,6 @@ export async function cancelarReserva(id) {
   return updateReserva(id, { estado: 'cancelada' });
 }
 
-// ── Pagos (Mercado Pago) ────────────────────────────────────────────────────────
-export async function crearPreferenciaPago(reservaId) {
-  const { data, error } = await supabase.functions.invoke('mp-create-preference', {
-    body: { reservaId, origin: window.location.origin },
-  });
-  if (error) throw new Error('No se pudo contactar el servicio de pagos.');
-  if (!data?.success) throw new Error(data?.error || 'No se pudo iniciar el pago.');
-  return data.redirectUrl;
-}
-
 // ── Servicios Realizados ──────────────────────────────────────────────────────
 export async function getServiciosRealizados() {
   const { data, error } = await supabase.from('servicios_realizados').select('*');
@@ -289,6 +279,55 @@ export async function createServicioRealizado(data) {
   const { count } = await supabase.from('servicios_realizados').select('*', { count: 'exact', head: true });
   const numero_recibo = `RS-${String((count || 0) + 1).padStart(8, '0')}`;
   const { data: nuevo, error } = await supabase.from('servicios_realizados').insert({ ...data, numero_recibo }).select().single();
+  if (error) throw error;
+  return nuevo;
+}
+
+export async function updateServicioRealizado(id, data) {
+  const { data: updated, error } = await supabase.from('servicios_realizados').update(data).eq('id', id).select().single();
+  if (error) throw error;
+  return updated;
+}
+
+export async function deleteServicioRealizado(id) {
+  const { error } = await supabase.from('servicios_realizados').delete().eq('id', id);
+  if (error) throw error;
+  return true;
+}
+
+// ── Clientes ──────────────────────────────────────────────────────────────────
+export async function getClientes() {
+  const { data, error } = await supabase.from('clientes').select('*');
+  if (error) throw error;
+  return data || [];
+}
+
+// Guarda un cliente en la base de datos. Solo el nombre es obligatorio;
+// si el cliente ya existe (mismo DNI o mismo nombre y apellidos) no se duplica.
+export async function saveCliente({ nombres, apellidos = '', dni = '', fecha_nacimiento = '', telefono = '' }) {
+  const nom = (nombres || '').trim();
+  if (!nom) return null;
+  const ape = (apellidos || '').trim();
+  const doc = (dni || '').trim();
+
+  if (doc) {
+    const { data: porDni } = await supabase.from('clientes').select('id').eq('dni', doc).limit(1);
+    if (porDni?.length) return null;
+  }
+  const { data: porNombre } = await supabase
+    .from('clientes').select('id')
+    .ilike('nombres', nom)
+    .ilike('apellidos', ape)
+    .limit(1);
+  if (porNombre?.length) return null;
+
+  const { data: nuevo, error } = await supabase.from('clientes').insert({
+    nombres: nom,
+    apellidos: ape,
+    dni: doc,
+    fecha_nacimiento: fecha_nacimiento || null,
+    telefono: (telefono || '').trim(),
+  }).select().single();
   if (error) throw error;
   return nuevo;
 }

@@ -14,6 +14,7 @@ import ManageServices from './pages/admin/ManageServices';
 import AdminReservations from './pages/admin/AdminReservations';
 import ManageSedes from './pages/admin/ManageSedes';
 import AdminServiciosRealizados from './pages/admin/AdminServiciosRealizados';
+import AdminClientes from './pages/admin/AdminClientes';
 
 // Barber pages
 import BarberLayout from './pages/barber/BarberLayout';
@@ -45,6 +46,7 @@ function AppRoutes() {
         <Route index element={<AdminDashboard />} />
         <Route path="reservas" element={<AdminReservations />} />
         <Route path="servicios-realizados" element={<AdminServiciosRealizados />} />
+        <Route path="clientes" element={<AdminClientes />} />
         <Route path="trabajadores" element={<ManageWorkers />} />
         <Route path="sedes" element={<ManageSedes />} />
         <Route path="catalogo" element={<ManageServices />} />
