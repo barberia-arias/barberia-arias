@@ -43,7 +43,7 @@ export default function ManageServices() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="font-heading text-3xl font-bold text-white mb-1">Servicios</h1>
           <p className="text-gray-500 text-sm">Catálogo de servicios de Barbería ARIAS</p>
@@ -78,11 +78,11 @@ export default function ManageServices() {
       {showForm && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-dark-2 border border-dark-4 w-full max-w-lg my-8">
-            <div className="flex items-center justify-between px-8 py-5 border-b border-dark-4">
+            <div className="flex items-center justify-between px-5 sm:px-8 py-5 border-b border-dark-4">
               <h3 className="font-heading text-xl text-white">{editing ? 'Editar Servicio' : 'Nuevo Servicio'}</h3>
               <button onClick={() => setShowForm(false)} className="text-gray-500 hover:text-white text-xl">×</button>
             </div>
-            <form onSubmit={handleSubmit} className="p-8 space-y-5">
+            <form onSubmit={handleSubmit} className="p-5 sm:p-8 space-y-5">
               <div>
                 <label className="label-dark">Nombre del servicio *</label>
                 <input required value={form.nombre} onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))} className="input-dark" placeholder="Ej: Corte Clásico" />

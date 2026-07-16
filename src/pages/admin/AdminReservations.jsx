@@ -75,8 +75,8 @@ export default function AdminReservations() {
         )}
       </div>
 
-      <div className="flex gap-6">
-        <div className="flex-1 bg-dark-2 border border-dark-4 overflow-hidden">
+      <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex-1 min-w-0 bg-dark-2 border border-dark-4 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -106,7 +106,7 @@ export default function AdminReservations() {
         </div>
 
         {selected && (
-          <div className="w-72 flex-shrink-0 bg-dark-2 border border-dark-4 p-5 self-start">
+          <div className="w-full lg:w-72 flex-shrink-0 bg-dark-2 border border-dark-4 p-5 self-start">
             <div className="flex items-center justify-between mb-5">
               <h3 className="font-heading text-base font-semibold text-white">Detalle</h3>
               <button onClick={() => setSelected(null)} className="text-gray-500 hover:text-white">×</button>

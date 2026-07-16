@@ -68,23 +68,23 @@ export default function BarberAppointments() {
         ) : (
           <div className="divide-y divide-dark-4/50">
             {filtered.map((r) => (
-              <div key={r.id} className="px-6 py-5 hover:bg-dark-3 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-start gap-5">
-                  <div className="text-right min-w-[80px]">
+              <div key={r.id} className="px-4 sm:px-6 py-5 hover:bg-dark-3 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-4 sm:gap-5">
+                  <div className="text-right min-w-[64px] sm:min-w-[80px] flex-shrink-0">
                     <p className="font-heading text-gold font-bold text-lg">{r.hora_inicio}</p>
                     <p className="text-gray-600 text-xs">{r.fecha}</p>
                   </div>
                   <div>
                     <p className="text-white font-semibold">{r.cliente_nombre}</p>
                     <p className="text-gray-400 text-sm">{getServiceName(r.servicio_id)}</p>
-                    <div className="flex gap-3 mt-1">
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
                       {r.cliente_telefono && <span className="text-gray-600 text-xs">📞 {r.cliente_telefono}</span>}
-                      {r.cliente_correo && <span className="text-gray-600 text-xs">✉ {r.cliente_correo}</span>}
+                      {r.cliente_correo && <span className="text-gray-600 text-xs break-all">✉ {r.cliente_correo}</span>}
                     </div>
                     {r.notas && <p className="text-gray-600 text-xs mt-1 italic">"{r.notas}"</p>}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center flex-wrap gap-3">
                   <span className={statusBadge[r.estado] || 'badge-pending'}>{r.estado}</span>
                   {(r.estado === 'pendiente' || r.estado === 'confirmada') && (
                     <button onClick={() => markFinished(r.id)}

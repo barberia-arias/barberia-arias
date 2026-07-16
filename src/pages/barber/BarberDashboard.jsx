@@ -133,16 +133,16 @@ export default function BarberDashboard() {
             ) : (
               <div className="divide-y divide-dark-4/50">
                 {reservasHoy.map((r) => (
-                  <div key={r.id} className="px-6 py-4 flex items-center justify-between hover:bg-dark-3 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <span className="font-heading text-gold font-bold text-lg w-16">{r.hora_inicio}</span>
+                  <div key={r.id} className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3 hover:bg-dark-3 transition-colors">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                      <span className="font-heading text-gold font-bold text-lg w-14 sm:w-16 flex-shrink-0">{r.hora_inicio}</span>
                       <div>
                         <p className="text-white font-medium">{r.cliente_nombre}</p>
                         <p className="text-gray-500 text-sm">{getServiceName(r.servicio_id)}</p>
                         {r.cliente_telefono && <p className="text-gray-600 text-xs mt-1">📞 {r.cliente_telefono}</p>}
                       </div>
                     </div>
-                    <span className={statusBadge[r.estado] || 'badge-pending'}>{r.estado}</span>
+                    <span className={`${statusBadge[r.estado] || 'badge-pending'} flex-shrink-0`}>{r.estado}</span>
                   </div>
                 ))}
               </div>
