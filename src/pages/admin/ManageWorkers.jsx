@@ -10,8 +10,8 @@ const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 const emptyForm = {
   nombre: '', correo: '', password: '', rol: 'barbero', estado: true,
-  especialidad: '', descripcion: '', horario_inicio: '09:00', horario_fin: '18:00',
-  dias_laborales: [1, 2, 3, 4, 5, 6], sede_id: '', servicios_ids: [],
+  especialidad: '', descripcion: '', horario_inicio: '10:00', horario_fin: '21:00',
+  dias_laborales: [0, 1, 2, 3, 4, 5, 6], sede_id: '', servicios_ids: [],
   foto: '', foto_hover: '',
 };
 
@@ -63,9 +63,9 @@ export default function ManageWorkers() {
       rol: user.rol, estado: user.estado,
       especialidad: barbero?.especialidad || '',
       descripcion: barbero?.descripcion || '',
-      horario_inicio: barbero?.horario_inicio || '09:00',
-      horario_fin: barbero?.horario_fin || '18:00',
-      dias_laborales: barbero?.dias_laborales || [1, 2, 3, 4, 5, 6],
+      horario_inicio: barbero?.horario_inicio || '10:00',
+      horario_fin: barbero?.horario_fin || '21:00',
+      dias_laborales: barbero?.dias_laborales || [0, 1, 2, 3, 4, 5, 6],
       sede_id: barbero?.sede_id || sedes[0]?.id || '',
       servicios_ids: barbero?.servicios_ids || [],
       foto: barbero?.foto || '', foto_hover: barbero?.foto_hover || '',

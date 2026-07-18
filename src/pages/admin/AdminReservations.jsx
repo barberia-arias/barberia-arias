@@ -75,7 +75,37 @@ export default function AdminReservations() {
         )}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
+      {/* Vista móvil: tarjetas con lista vertical de estados */}
+      <div className="lg:hidden space-y-4">
+        {filtered.length === 0 && (
+          <div className="bg-dark-2 border border-dark-4 p-10 text-center text-gray-500">No hay reservas que coincidan con los filtros.</div>
+        )}
+        {filtered.map((r) => (
+          <div key={r.id} className="bg-dark-2 border border-dark-4 p-4">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <p className="text-white font-semibold">{r.cliente_nombre}</p>
+                <p className="text-gray-400 text-sm">{getServiceName(r.servicio_id)} · {getBarberName(r.barbero_id)}</p>
+                <p className="text-gray-500 text-xs mt-1">{r.fecha} · <span className="text-gold font-medium">{r.hora_inicio}</span></p>
+                {r.cliente_telefono && <p className="text-gray-600 text-xs mt-1">📞 {r.cliente_telefono}</p>}
+              </div>
+              <span className={`${statusBadge[r.estado] || 'badge-pending'} flex-shrink-0`}>{r.estado}</span>
+            </div>
+            <p className="text-gray-600 text-xs tracking-widest uppercase mb-2">Cambiar estado:</p>
+            <div className="space-y-2">
+              {['pendiente', 'confirmada', 'finalizada', 'cancelada'].map((s) => (
+                <button key={s} disabled={r.estado === s} onClick={() => changeStatus(r.id, s)}
+                  className={`w-full text-left px-3 py-2.5 text-xs border transition-all capitalize ${r.estado === s ? 'border-gold bg-gold/10 text-gold cursor-default' : 'border-dark-4 text-gray-500 active:border-gold active:text-gold hover:border-gold/50 hover:text-gray-300'}`}>
+                  {s === r.estado ? `✓ ${s}` : s}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Vista escritorio: tabla + panel de detalle */}
+      <div className="hidden lg:flex gap-6">
         <div className="flex-1 min-w-0 bg-dark-2 border border-dark-4 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

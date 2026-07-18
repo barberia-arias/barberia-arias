@@ -12,7 +12,7 @@ export default function Footer() {
               <img src="/logo.png" alt="Barbershop ARIAS" className="h-14 w-auto object-contain" />
             </div>
             <p className="text-gray-500 text-sm leading-relaxed mb-5">
-              Más de una década refinando el arte del corte masculino. Tu imagen, nuestra pasión.
+              Refinando el arte del corte masculino desde 2020. Tu imagen, nuestra pasión.
             </p>
             <div className="flex gap-3">
               {['IG', 'FB', 'TT'].map((s) => (
@@ -60,8 +60,7 @@ export default function Footer() {
               <li className="flex gap-3">
                 <span className="text-gold mt-0.5">🕐</span>
                 <div className="text-gray-500 text-sm">
-                  <p>Lun–Sáb: 9:00 – 19:00</p>
-                  <p>Dom: Bajo cita previa</p>
+                  <p>Lun–Dom: 10:00 am – 9:00 pm</p>
                 </div>
               </li>
             </ul>

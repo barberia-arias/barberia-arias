@@ -12,7 +12,7 @@ export default function Hero() {
         />
         <div
           className="absolute inset-0"
-          style={{ background: 'linear-gradient(to bottom, rgba(10,10,10,0.82) 0%, rgba(10,10,10,0.72) 50%, #0a0a0a 100%)' }}
+          style={{ background: 'linear-gradient(to bottom, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.4) 50%, #0a0a0a 100%)' }}
         />
         {/* Decorative lines */}
         <div className="absolute top-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
@@ -49,20 +49,6 @@ export default function Hero() {
           </a>
         </div>
 
-        {/* Stats */}
-        <div className="flex flex-wrap justify-center gap-12 mt-20 pt-12 border-t border-dark-4">
-          {[
-            { value: '5+', label: 'Años de Experiencia' },
-            { value: '5K+', label: 'Clientes Satisfechos' },
-            { value: '3', label: 'Sedes en Lima' },
-            { value: '100%', label: 'Satisfacción Garantizada' },
-          ].map((stat) => (
-            <div key={stat.label} className="text-center">
-              <div className="font-heading text-3xl font-bold text-gold mb-1">{stat.value}</div>
-              <div className="text-gray-500 text-xs tracking-widest uppercase">{stat.label}</div>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Scroll indicator */}

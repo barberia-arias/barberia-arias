@@ -1,6 +1,14 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { getBarberos } from '../../services/db';
 
 export default function BookingCTA() {
+  const [numBarberos, setNumBarberos] = useState(null);
+
+  useEffect(() => {
+    getBarberos(true).then((b) => setNumBarberos(b.length)).catch(() => {});
+  }, []);
+
   return (
     <section className="py-24 bg-dark-2 relative overflow-hidden">
       {/* Gold accent top border */}
@@ -52,9 +60,9 @@ export default function BookingCTA() {
 
               <div className="space-y-4">
                 {[
-                  { label: 'Horario', value: 'Lun – Sáb: 9:00 – 19:00' },
+                  { label: 'Horario', value: 'Lun – Dom: 10:00 am – 9:00 pm' },
                   { label: 'Tiempo promedio', value: '30 – 60 minutos' },
-                  { label: 'Barberos disponibles', value: '3 profesionales' },
+                  { label: 'Barberos disponibles', value: numBarberos ? `${numBarberos} ${numBarberos === 1 ? 'profesional' : 'profesionales'}` : '—' },
                   { label: 'Reservas online', value: 'Disponible 24/7' },
                 ].map((item) => (
                   <div key={item.label} className="flex justify-between items-center py-3 border-b border-dark-4 last:border-0">
