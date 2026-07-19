@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getReservas, getBarberos, getServicios, updateReserva } from '../../services/db';
 
 const STATUS_OPTIONS = ['todos', 'pendiente', 'confirmada', 'cancelada', 'finalizada'];
+const ESTADOS = ['pendiente', 'confirmada', 'finalizada', 'cancelada'];
 const statusBadge = {
   pendiente: 'badge-pending',
   confirmada: 'badge-confirmed',
@@ -16,7 +17,7 @@ export default function AdminReservations() {
   const [filterStatus, setFilterStatus] = useState('todos');
   const [filterBarbero, setFilterBarbero] = useState('todos');
   const [filterFecha, setFilterFecha] = useState('');
-  const [selected, setSelected] = useState(null);
+  const [openMenu, setOpenMenu] = useState(null);
 
   const refresh = async () => setReservas(await getReservas());
 
@@ -31,8 +32,6 @@ export default function AdminReservations() {
 
   const getBarberName = (id) => barberos.find((b) => b.id === id)?.nombre || '-';
   const getServiceName = (id) => servicios.find((s) => s.id === id)?.nombre || '-';
-  const getServicePrice = (id) => servicios.find((s) => s.id === id)?.precio || 0;
-  const formatPrice = (p) => new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', maximumFractionDigits: 2 }).format(p);
 
   const filtered = reservas
     .filter((r) => filterStatus === 'todos' || r.estado === filterStatus)
@@ -42,9 +41,29 @@ export default function AdminReservations() {
 
   const changeStatus = async (id, estado) => {
     await updateReserva(id, { estado });
+    setOpenMenu(null);
     await refresh();
-    if (selected?.id === id) setSelected({ ...selected, estado });
   };
+
+  const statusList = (r) => (
+    <div className="mt-2 space-y-1.5">
+      {ESTADOS.map((s) => (
+        <button key={s} disabled={r.estado === s} onClick={() => changeStatus(r.id, s)}
+          className={`block w-full text-left px-3 py-2 text-xs border transition-all capitalize ${r.estado === s ? 'border-gold bg-gold/10 text-gold cursor-default' : 'border-dark-4 bg-dark-3 text-gray-400 hover:border-gold/50 hover:text-gray-200'}`}>
+          {s === r.estado ? `✓ ${s}` : s}
+        </button>
+      ))}
+    </div>
+  );
+
+  const statusToggle = (r) => (
+    <button onClick={() => setOpenMenu(openMenu === r.id ? null : r.id)}
+      className="inline-flex items-center gap-1.5"
+      title="Cambiar estado">
+      <span className={statusBadge[r.estado] || 'badge-pending'}>{r.estado}</span>
+      <span className={`text-gray-500 text-xs transition-transform ${openMenu === r.id ? 'rotate-180' : ''}`}>▾</span>
+    </button>
+  );
 
   return (
     <div>
@@ -75,112 +94,56 @@ export default function AdminReservations() {
         )}
       </div>
 
-      {/* Vista móvil: tarjetas con lista vertical de estados */}
+      {/* Vista móvil: tarjetas */}
       <div className="lg:hidden space-y-4">
         {filtered.length === 0 && (
           <div className="bg-dark-2 border border-dark-4 p-10 text-center text-gray-500">No hay reservas que coincidan con los filtros.</div>
         )}
         {filtered.map((r) => (
           <div key={r.id} className="bg-dark-2 border border-dark-4 p-4">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
                 <p className="text-white font-semibold">{r.cliente_nombre}</p>
                 <p className="text-gray-400 text-sm">{getServiceName(r.servicio_id)} · {getBarberName(r.barbero_id)}</p>
                 <p className="text-gray-500 text-xs mt-1">{r.fecha} · <span className="text-gold font-medium">{r.hora_inicio}</span></p>
                 {r.cliente_telefono && <p className="text-gray-600 text-xs mt-1">📞 {r.cliente_telefono}</p>}
               </div>
-              <span className={`${statusBadge[r.estado] || 'badge-pending'} flex-shrink-0`}>{r.estado}</span>
+              <div className="flex-shrink-0">{statusToggle(r)}</div>
             </div>
-            <p className="text-gray-600 text-xs tracking-widest uppercase mb-2">Cambiar estado:</p>
-            <div className="space-y-2">
-              {['pendiente', 'confirmada', 'finalizada', 'cancelada'].map((s) => (
-                <button key={s} disabled={r.estado === s} onClick={() => changeStatus(r.id, s)}
-                  className={`w-full text-left px-3 py-2.5 text-xs border transition-all capitalize ${r.estado === s ? 'border-gold bg-gold/10 text-gold cursor-default' : 'border-dark-4 text-gray-500 active:border-gold active:text-gold hover:border-gold/50 hover:text-gray-300'}`}>
-                  {s === r.estado ? `✓ ${s}` : s}
-                </button>
-              ))}
-            </div>
+            {openMenu === r.id && statusList(r)}
           </div>
         ))}
       </div>
 
-      {/* Vista escritorio: tabla + panel de detalle */}
-      <div className="hidden lg:flex gap-6">
-        <div className="flex-1 min-w-0 bg-dark-2 border border-dark-4 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-dark-4">
-                  {['Fecha', 'Hora', 'Cliente', 'Servicio', 'Barbero', 'Estado', ''].map((h) => (
-                    <th key={h} className="text-left px-5 py-3 text-gray-600 text-xs tracking-widest uppercase font-medium">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r) => (
-                  <tr key={r.id} onClick={() => setSelected(r)}
-                    className={`border-b border-dark-4/50 cursor-pointer transition-colors ${selected?.id === r.id ? 'bg-gold/5' : 'hover:bg-dark-3'}`}>
-                    <td className="px-5 py-3 text-gray-400">{r.fecha}</td>
-                    <td className="px-5 py-3 font-medium text-gold">{r.hora_inicio}</td>
-                    <td className="px-5 py-3 text-white">{r.cliente_nombre}</td>
-                    <td className="px-5 py-3 text-gray-400">{getServiceName(r.servicio_id)}</td>
-                    <td className="px-5 py-3 text-gray-400">{getBarberName(r.barbero_id)}</td>
-                    <td className="px-5 py-3"><span className={statusBadge[r.estado] || 'badge-pending'}>{r.estado}</span></td>
-                    <td className="px-5 py-3 text-gray-600 text-xs">›</td>
-                  </tr>
+      {/* Vista escritorio: tabla */}
+      <div className="hidden lg:block bg-dark-2 border border-dark-4 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-dark-4">
+                {['Fecha', 'Hora', 'Cliente', 'Servicio', 'Barbero', 'Estado'].map((h) => (
+                  <th key={h} className="text-left px-5 py-3 text-gray-600 text-xs tracking-widest uppercase font-medium">{h}</th>
                 ))}
-              </tbody>
-            </table>
-            {filtered.length === 0 && <div className="p-10 text-center text-gray-500">No hay reservas que coincidan con los filtros.</div>}
-          </div>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((r) => (
+                <tr key={r.id} className="border-b border-dark-4/50 hover:bg-dark-3 transition-colors align-top">
+                  <td className="px-5 py-3 text-gray-400">{r.fecha}</td>
+                  <td className="px-5 py-3 font-medium text-gold">{r.hora_inicio}</td>
+                  <td className="px-5 py-3 text-white">{r.cliente_nombre}</td>
+                  <td className="px-5 py-3 text-gray-400">{getServiceName(r.servicio_id)}</td>
+                  <td className="px-5 py-3 text-gray-400">{getBarberName(r.barbero_id)}</td>
+                  <td className="px-5 py-3">
+                    {statusToggle(r)}
+                    {openMenu === r.id && <div className="w-40">{statusList(r)}</div>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filtered.length === 0 && <div className="p-10 text-center text-gray-500">No hay reservas que coincidan con los filtros.</div>}
         </div>
-
-        {selected && (
-          <div className="w-full lg:w-72 flex-shrink-0 bg-dark-2 border border-dark-4 p-5 self-start">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-heading text-base font-semibold text-white">Detalle</h3>
-              <button onClick={() => setSelected(null)} className="text-gray-500 hover:text-white">×</button>
-            </div>
-            <div className="space-y-3 text-sm mb-6">
-              {[
-                { label: 'ID', value: `#${selected.id.slice(-6).toUpperCase()}` },
-                { label: 'Cliente', value: selected.cliente_nombre },
-                { label: 'Teléfono', value: selected.cliente_telefono || '-' },
-                { label: 'Correo', value: selected.cliente_correo || '-' },
-                { label: 'Servicio', value: getServiceName(selected.servicio_id) },
-                { label: 'Precio', value: formatPrice(getServicePrice(selected.servicio_id)) },
-                { label: 'Barbero', value: getBarberName(selected.barbero_id) },
-                { label: 'Fecha', value: selected.fecha },
-                { label: 'Hora', value: `${selected.hora_inicio} – ${selected.hora_fin}` },
-                { label: 'Estado', value: selected.estado },
-              ].map((item) => (
-                <div key={item.label} className="flex justify-between gap-2">
-                  <span className="text-gray-600">{item.label}</span>
-                  <span className="text-white text-right">{item.value}</span>
-                </div>
-              ))}
-              <div className="flex justify-between gap-2">
-                <span className="text-gray-600">Pago</span>
-                <span className="badge-pending">En el local</span>
-              </div>
-              {selected.notas && (
-                <div className="pt-3 border-t border-dark-4">
-                  <p className="text-gray-600 text-xs mb-1">Notas:</p>
-                  <p className="text-gray-400">{selected.notas}</p>
-                </div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <p className="text-gray-600 text-xs tracking-widest uppercase mb-2">Cambiar estado:</p>
-              {['pendiente', 'confirmada', 'finalizada', 'cancelada'].map((s) => (
-                <button key={s} disabled={selected.estado === s} onClick={() => changeStatus(selected.id, s)}
-                  className={`w-full text-left px-3 py-2 text-xs border transition-all capitalize ${selected.estado === s ? 'border-gold bg-gold/10 text-gold cursor-default' : 'border-dark-4 text-gray-500 hover:border-gold/50 hover:text-gray-300'}`}>
-                  {s === selected.estado ? `✓ ${s}` : s}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
