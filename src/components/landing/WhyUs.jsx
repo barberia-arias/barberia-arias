@@ -67,7 +67,7 @@ export default function WhyUs() {
         <div className="mt-20 border border-dark-4 p-10 text-center relative">
           <div className="absolute -top-px left-1/2 -translate-x-1/2 w-24 h-px bg-gold" />
           <span className="font-heading text-5xl text-gold/30 leading-none block mb-4">"</span>
-          <blockquote className="font-heading text-xl sm:text-2xl text-white italic max-w-3xl mx-auto leading-relaxed">
+          <blockquote className="text-xl sm:text-2xl text-white italic font-light max-w-3xl mx-auto leading-relaxed">
             Un buen corte no es solo apariencia — es confianza, carácter y la primera impresión que el mundo tiene de ti.
           </blockquote>
           <div className="mt-6 flex items-center justify-center gap-3">

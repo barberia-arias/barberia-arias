@@ -18,7 +18,7 @@ export default {
         },
       },
       fontFamily: {
-        heading: ['"Playfair Display"', 'Georgia', 'serif'],
+        heading: ['"Bebas Neue"', 'Impact', 'sans-serif'],
         body: ['"Inter"', 'sans-serif'],
       },
     },

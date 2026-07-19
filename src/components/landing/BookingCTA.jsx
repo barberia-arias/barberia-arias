@@ -23,7 +23,7 @@ export default function BookingCTA() {
             <h2 className="font-heading text-4xl sm:text-5xl font-bold text-white mb-6 leading-tight">
               Tu próxima cita
               <br />
-              <span className="text-gold italic">te está esperando</span>
+              <span className="text-gold">te está esperando</span>
             </h2>
             <p className="text-gray-400 text-base leading-relaxed mb-8">
               Reserva en menos de 2 minutos. Selecciona tu servicio, elige a tu barbero de confianza, escoge la fecha y la hora que mejor te convenga. Sin complicaciones.
