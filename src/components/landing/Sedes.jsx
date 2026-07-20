@@ -57,7 +57,7 @@ export default function Sedes() {
               {/* Info */}
               <div className="p-6 flex flex-col flex-1">
                 <p className="text-gold text-xs tracking-widest uppercase mb-2">Sede {idx + 1}</p>
-                <h3 className="font-heading text-2xl font-bold text-white uppercase tracking-wider mb-3">
+                <h3 className="font-heading text-3xl font-bold text-white uppercase tracking-wider mb-3">
                   {sede.nombre}
                 </h3>
                 <div className="flex items-start gap-3 mb-auto">

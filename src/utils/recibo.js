@@ -1,5 +1,7 @@
 export function printRecibo(servicio) {
   const tienePagosDetallados = Array.isArray(servicio.pagos) && servicio.pagos.length > 0;
+  const propina = Number(servicio.propina || 0);
+  const totalPagado = Number(servicio.total || 0) + propina;
   const lineaFormaPago = tienePagosDetallados
     ? servicio.pagos.map((p) => `${p.medio} S/ ${Number(p.monto).toFixed(2)}`).join(' + ')
     : (servicio.medio_pago || 'CONTADO');
@@ -61,8 +63,12 @@ ${servicio.producto_vendido ? `<div class="row">
   <span>Prod: ${servicio.producto_vendido}</span>
   <span>${servicio.precio_producto ? 'S/ ' + Number(servicio.precio_producto).toFixed(2) : '&mdash;'}</span>
 </div>` : ''}
+${propina > 0 ? `<div class="row">
+  <span>Propina barbero</span>
+  <span>S/ ${propina.toFixed(2)}</span>
+</div>` : ''}
 <div class="dots">${'::::::::::::::::::::::::::::::::'}</div>
-<div class="total-row"><span>TOTAL</span><span>S/ ${Number(servicio.total).toFixed(2)}</span></div>
+<div class="total-row"><span>TOTAL</span><span>S/ ${totalPagado.toFixed(2)}</span></div>
 ${tienePagosDetallados && servicio.pagos.length > 1 ? servicio.pagos.map((p) => `<div class="row">
   <span>Pago ${p.medio}</span>
   <span>S/ ${Number(p.monto).toFixed(2)}</span>

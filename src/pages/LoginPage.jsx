@@ -88,23 +88,6 @@ export default function LoginPage() {
               {loading ? 'Verificando...' : 'Ingresar al Sistema'}
             </button>
           </form>
-
-          {/* Demo credentials */}
-          <div className="mt-8 border-t border-dark-4 pt-6">
-            <p className="text-gray-600 text-xs mb-3 tracking-wide uppercase font-medium">Credenciales de demostración:</p>
-            <div className="space-y-2">
-              <div className="bg-dark-3 px-4 py-2.5 text-xs">
-                <span className="text-gold font-semibold">Admin:</span>
-                <span className="text-gray-400 ml-2">admin@barberia-arias.com</span>
-                <span className="text-gray-600 ml-2">/ Admin2024*</span>
-              </div>
-              <div className="bg-dark-3 px-4 py-2.5 text-xs">
-                <span className="text-gold font-semibold">Barbero:</span>
-                <span className="text-gray-400 ml-2">carlos@barberia-arias.com</span>
-                <span className="text-gray-600 ml-2">/ Carlos2024*</span>
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="text-center mt-6">

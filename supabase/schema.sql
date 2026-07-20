@@ -85,6 +85,9 @@ create table if not exists servicios_realizados (
   -- Detalle de pagos; permite combinar medios:
   -- [{"medio":"YAPE","monto":20},{"medio":"EFECTIVO","monto":10}]
   pagos jsonb default '[]',
+  -- Propina para el barbero; se cobra junto al servicio pero
+  -- no forma parte del total (ingreso de la barbería)
+  propina numeric default 0,
   total numeric,
   fecha date,
   hora text,

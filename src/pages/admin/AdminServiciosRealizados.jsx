@@ -64,6 +64,7 @@ export default function AdminServiciosRealizados() {
       servicio_id: r.servicio_id || '',
       producto_vendido: r.producto_vendido || '',
       precio_producto: r.precio_producto ? String(r.precio_producto) : '',
+      propina: Number(r.propina) > 0 ? String(r.propina) : '',
     });
     const pagos = { EFECTIVO: '', YAPE: '', PLIN: '' };
     getDesglose(r).forEach((p) => { if (pagos[p.medio] !== undefined) pagos[p.medio] = String(p.monto); });
@@ -74,6 +75,8 @@ export default function AdminServiciosRealizados() {
   const editServicio = catalogo.find((s) => s.id === editForm?.servicio_id);
   const editTotal = Number(editServicio?.precio ?? editing?.servicio_precio ?? 0) +
     (editForm?.producto_vendido && editForm?.precio_producto ? Number(editForm.precio_producto) : 0);
+  const editPropina = editForm?.propina ? Number(editForm.propina) : 0;
+  const editTotalCobrar = editTotal + editPropina;
   const editActivos = MEDIOS_PAGO.filter((m) => editPagos[m] !== '');
   const editPagado = editActivos.reduce((s, m) => s + Number(editPagos[m] || 0), 0);
 
@@ -82,8 +85,8 @@ export default function AdminServiciosRealizados() {
     if (!editForm.cliente_nombre.trim()) { setEditError('El nombre del cliente es obligatorio.'); return; }
     if (editActivos.length === 0) { setEditError('Indica al menos un medio de pago.'); return; }
     if (editActivos.some((m) => !Number(editPagos[m]) || Number(editPagos[m]) <= 0)) { setEditError('Cada medio de pago necesita un monto válido.'); return; }
-    if (Math.abs(editTotal - editPagado) > 0.01) {
-      setEditError(`Los pagos (${formatPrice(editPagado)}) no cuadran con el total (${formatPrice(editTotal)}).`);
+    if (Math.abs(editTotalCobrar - editPagado) > 0.01) {
+      setEditError(`Los pagos (${formatPrice(editPagado)}) no cuadran con el total a cobrar (${formatPrice(editTotalCobrar)}).`);
       return;
     }
     setSaving(true);
@@ -96,6 +99,7 @@ export default function AdminServiciosRealizados() {
         servicio_precio: Number(editServicio?.precio ?? editing.servicio_precio),
         producto_vendido: editForm.producto_vendido.trim(),
         precio_producto: editForm.producto_vendido.trim() && editForm.precio_producto ? Number(editForm.precio_producto) : 0,
+        propina: editPropina,
         medio_pago: pagosList.map((p) => p.medio).join(' + '),
         pagos: pagosList,
         total: editTotal,
@@ -141,7 +145,7 @@ export default function AdminServiciosRealizados() {
       </div>
 
       {filtered.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
           <div className="bg-dark-2 border border-dark-4 p-4 text-center">
             <div className="font-heading text-2xl font-bold text-gold">{filtered.length}</div>
             <p className="text-gray-500 text-xs uppercase tracking-wide mt-1">Servicios</p>
@@ -158,6 +162,10 @@ export default function AdminServiciosRealizados() {
               <p className="text-gray-500 text-xs uppercase tracking-wide mt-1">{medio} ({countPorMedio(medio)})</p>
             </div>
           ))}
+          <div className="bg-dark-2 border border-dark-4 p-4 text-center">
+            <div className="font-heading text-xl font-bold text-green-400">{formatPrice(filtered.reduce((s, r) => s + Number(r.propina || 0), 0))}</div>
+            <p className="text-gray-500 text-xs uppercase tracking-wide mt-1">Propinas</p>
+          </div>
           <div className="bg-dark-2 border border-dark-4 p-4 text-center">
             <div className="font-heading text-2xl font-bold text-white">{filtered.filter((r) => r.producto_vendido).length}</div>
             <p className="text-gray-500 text-xs uppercase tracking-wide mt-1">Con producto</p>
@@ -197,7 +205,10 @@ export default function AdminServiciosRealizados() {
                       ))}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-white font-medium">{formatPrice(r.total)}</td>
+                  <td className="px-4 py-3 text-white font-medium">
+                    <div>{formatPrice(r.total)}</div>
+                    {Number(r.propina) > 0 && <div className="text-green-400 text-xs font-normal mt-0.5 whitespace-nowrap">+ prop. {formatPrice(r.propina)}</div>}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3 whitespace-nowrap">
                       <button onClick={() => printRecibo(r)} className="text-gold hover:text-gold-light text-xs font-medium uppercase tracking-wide transition-colors">
@@ -259,6 +270,11 @@ export default function AdminServiciosRealizados() {
               </div>
 
               <div>
+                <label className="label-dark">Propina para el barbero (S/)</label>
+                <input type="number" min="0" step="0.50" value={editForm.propina} onChange={(e) => setEditForm((f) => ({ ...f, propina: e.target.value }))} className="input-dark" placeholder="0.00" />
+              </div>
+
+              <div>
                 <label className="label-dark mb-2 block">Medios de pago (deja vacío el que no aplique)</label>
                 <div className="grid grid-cols-3 gap-3">
                   {MEDIOS_PAGO.map((medio) => (
@@ -273,9 +289,12 @@ export default function AdminServiciosRealizados() {
               </div>
 
               <div className="bg-dark-3 border border-gold/20 px-4 py-3 flex justify-between items-center text-sm">
-                <span className="text-gray-400">Total: <span className="text-gold font-bold">{formatPrice(editTotal)}</span></span>
-                <span className={Math.abs(editTotal - editPagado) > 0.01 ? 'text-yellow-400' : 'text-green-400'}>
-                  Pagos: {formatPrice(editPagado)} {Math.abs(editTotal - editPagado) > 0.01 ? '✗' : '✓'}
+                <span className="text-gray-400">
+                  Total: <span className="text-gold font-bold">{formatPrice(editTotalCobrar)}</span>
+                  {editPropina > 0 && <span className="text-gray-600 text-xs"> (incl. propina {formatPrice(editPropina)})</span>}
+                </span>
+                <span className={Math.abs(editTotalCobrar - editPagado) > 0.01 ? 'text-yellow-400' : 'text-green-400'}>
+                  Pagos: {formatPrice(editPagado)} {Math.abs(editTotalCobrar - editPagado) > 0.01 ? '✗' : '✓'}
                 </span>
               </div>
 

@@ -14,7 +14,7 @@ const formatPrice = (p) =>
 const MEDIOS_PAGO = ['EFECTIVO', 'YAPE', 'PLIN'];
 const emptyForm = {
   cliente_nombre: '', cliente_apellidos: '', cliente_dni: '', cliente_fecha_nacimiento: '', cliente_telefono: '',
-  servicio_id: '', producto_vendido: '', precio_producto: '',
+  servicio_id: '', producto_vendido: '', precio_producto: '', propina: '',
 };
 const emptyPagos = { EFECTIVO: '', YAPE: '', PLIN: '' };
 
@@ -53,16 +53,18 @@ export default function BarberRegistrarServicio() {
 
   const selectedService = servicios.find((s) => s.id === form.servicio_id);
   const total = Number(selectedService?.precio || 0) + (form.producto_vendido && form.precio_producto ? Number(form.precio_producto) : 0);
+  const propina = form.propina ? Number(form.propina) : 0;
+  const totalCobrar = total + propina;
 
   const pagosActivos = MEDIOS_PAGO.filter((m) => pagos[m] !== '');
   const totalPagado = pagosActivos.reduce((s, m) => s + Number(pagos[m] || 0), 0);
-  const diferencia = Number((total - totalPagado).toFixed(2));
+  const diferencia = Number((totalCobrar - totalPagado).toFixed(2));
 
   const toggleMedio = (medio) => {
     setPagos((p) => {
       if (p[medio] !== '') return { ...p, [medio]: '' };
       // al activar, sugiere el monto que falta por cubrir
-      const restante = Math.max(0, total - MEDIOS_PAGO.filter((m) => m !== medio && p[m] !== '').reduce((s, m) => s + Number(p[m] || 0), 0));
+      const restante = Math.max(0, totalCobrar - MEDIOS_PAGO.filter((m) => m !== medio && p[m] !== '').reduce((s, m) => s + Number(p[m] || 0), 0));
       return { ...p, [medio]: restante > 0 ? String(restante) : '' };
     });
   };
@@ -75,7 +77,7 @@ export default function BarberRegistrarServicio() {
     if (pagosActivos.length === 0) { setError('Selecciona al menos un medio de pago.'); return; }
     if (pagosActivos.some((m) => !Number(pagos[m]) || Number(pagos[m]) <= 0)) { setError('Ingresa un monto válido para cada medio de pago.'); return; }
     if (Math.abs(diferencia) > 0.01) {
-      setError(`Los montos de pago (${formatPrice(totalPagado)}) no coinciden con el total (${formatPrice(total)}).`);
+      setError(`Los montos de pago (${formatPrice(totalPagado)}) no coinciden con el total a cobrar (${formatPrice(totalCobrar)}).`);
       return;
     }
     setSaving(true);
@@ -88,6 +90,7 @@ export default function BarberRegistrarServicio() {
       servicio_id: form.servicio_id, servicio_nombre: selectedService.nombre, servicio_precio: selectedService.precio,
       producto_vendido: form.producto_vendido.trim(),
       precio_producto: form.producto_vendido.trim() && form.precio_producto ? Number(form.precio_producto) : 0,
+      propina,
       medio_pago: pagosList.map((p) => p.medio).join(' + '),
       pagos: pagosList,
       total,
@@ -206,6 +209,12 @@ export default function BarberRegistrarServicio() {
           )}
 
           <div>
+            <label className="label-dark">Propina (opcional, S/)</label>
+            <input type="number" min="0" step="0.50" value={form.propina} onChange={(e) => setForm((f) => ({ ...f, propina: e.target.value }))} className="input-dark" placeholder="0.00" />
+            <p className="text-gray-600 text-xs mt-1">Propina que el cliente deja al barbero. Se incluye en el recibo.</p>
+          </div>
+
+          <div>
             <label className="label-dark mb-1 block">Medios de pago *</label>
             <p className="text-gray-600 text-xs mb-3">Puedes combinar varios medios. Ej: Yape S/ 20 + Efectivo S/ 10.</p>
             <div className="grid sm:grid-cols-3 gap-3">
@@ -234,9 +243,15 @@ export default function BarberRegistrarServicio() {
 
           {form.servicio_id && (
             <div className="bg-dark-3 border border-gold/20 px-4 py-3 space-y-2">
+              {propina > 0 && (
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-500">Servicio{form.producto_vendido ? ' + producto' : ''}: {formatPrice(total)}</span>
+                  <span className="text-gray-500">Propina: {formatPrice(propina)}</span>
+                </div>
+              )}
               <div className="flex justify-between items-center">
                 <span className="text-white font-semibold text-sm">Total a cobrar</span>
-                <span className="text-gold font-heading font-bold text-xl">{formatPrice(total)}</span>
+                <span className="text-gold font-heading font-bold text-xl">{formatPrice(totalCobrar)}</span>
               </div>
               {pagosActivos.length > 0 && (
                 <div className="flex justify-between items-center text-xs border-t border-dark-4 pt-2">
@@ -292,6 +307,7 @@ export default function BarberRegistrarServicio() {
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-white font-heading font-bold">{formatPrice(r.total)}</p>
+                  {Number(r.propina) > 0 && <p className="text-green-400 text-xs">+ propina {formatPrice(r.propina)}</p>}
                   <button onClick={() => printRecibo(r)} className="text-gold text-xs hover:text-gold-light transition-colors mt-1 uppercase tracking-wide">Recibo</button>
                 </div>
               </div>
@@ -302,7 +318,12 @@ export default function BarberRegistrarServicio() {
         {listaVisible.length > 0 && (
           <div className="px-6 py-4 border-t border-dark-4 flex justify-between items-center">
             <span className="text-gray-500 text-xs">{verTodos ? 'Total general' : 'Total del día'}</span>
-            <span className="text-gold font-heading font-bold">{formatPrice(listaVisible.reduce((s, r) => s + Number(r.total || 0), 0))}</span>
+            <div className="text-right">
+              <span className="text-gold font-heading font-bold">{formatPrice(listaVisible.reduce((s, r) => s + Number(r.total || 0), 0))}</span>
+              {listaVisible.some((r) => Number(r.propina) > 0) && (
+                <p className="text-green-400 text-xs mt-0.5">Propinas: {formatPrice(listaVisible.reduce((s, r) => s + Number(r.propina || 0), 0))}</p>
+              )}
+            </div>
           </div>
         )}
       </div>
