@@ -17,6 +17,7 @@ const emptyForm = {
   servicio_id: '', producto_vendido: '', precio_producto: '', propina: '',
 };
 const emptyPagos = { EFECTIVO: '', YAPE: '', PLIN: '' };
+const emptyMediosActivos = { EFECTIVO: false, YAPE: false, PLIN: false };
 
 export default function BarberRegistrarServicio() {
   const { user } = useAuth();
@@ -26,6 +27,7 @@ export default function BarberRegistrarServicio() {
   const [registros, setRegistros] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [pagos, setPagos] = useState(emptyPagos);
+  const [mediosActivos, setMediosActivos] = useState(emptyMediosActivos);
   const [error, setError] = useState('');
   const [ultimoRegistro, setUltimoRegistro] = useState(null);
   const [verTodos, setVerTodos] = useState(false);
@@ -56,15 +58,20 @@ export default function BarberRegistrarServicio() {
   const propina = form.propina ? Number(form.propina) : 0;
   const totalCobrar = total + propina;
 
-  const pagosActivos = MEDIOS_PAGO.filter((m) => pagos[m] !== '');
+  const pagosActivos = MEDIOS_PAGO.filter((m) => mediosActivos[m]);
   const totalPagado = pagosActivos.reduce((s, m) => s + Number(pagos[m] || 0), 0);
   const diferencia = Number((totalCobrar - totalPagado).toFixed(2));
 
   const toggleMedio = (medio) => {
+    if (mediosActivos[medio]) {
+      setMediosActivos((a) => ({ ...a, [medio]: false }));
+      setPagos((p) => ({ ...p, [medio]: '' }));
+      return;
+    }
+    setMediosActivos((a) => ({ ...a, [medio]: true }));
+    // al activar, sugiere el monto que falta por cubrir
     setPagos((p) => {
-      if (p[medio] !== '') return { ...p, [medio]: '' };
-      // al activar, sugiere el monto que falta por cubrir
-      const restante = Math.max(0, totalCobrar - MEDIOS_PAGO.filter((m) => m !== medio && p[m] !== '').reduce((s, m) => s + Number(p[m] || 0), 0));
+      const restante = Math.max(0, totalCobrar - MEDIOS_PAGO.filter((m) => m !== medio && mediosActivos[m]).reduce((s, m) => s + Number(p[m] || 0), 0));
       return { ...p, [medio]: restante > 0 ? String(restante) : '' };
     });
   };
@@ -111,6 +118,7 @@ export default function BarberRegistrarServicio() {
       setUltimoRegistro(nuevo);
       setForm(emptyForm);
       setPagos(emptyPagos);
+      setMediosActivos(emptyMediosActivos);
       await refresh();
     } catch (err) {
       setError(err.message);
@@ -219,7 +227,7 @@ export default function BarberRegistrarServicio() {
             <p className="text-gray-600 text-xs mb-3">Puedes combinar varios medios. Ej: Yape S/ 20 + Efectivo S/ 10.</p>
             <div className="grid sm:grid-cols-3 gap-3">
               {MEDIOS_PAGO.map((medio) => {
-                const activo = pagos[medio] !== '';
+                const activo = mediosActivos[medio];
                 return (
                   <div key={medio} className={`border-2 transition-all duration-200 ${activo ? 'border-gold bg-gold/5' : 'border-dark-4'}`}>
                     <button type="button" onClick={() => toggleMedio(medio)}
@@ -269,7 +277,7 @@ export default function BarberRegistrarServicio() {
           {error && <div className="bg-red-900/20 border border-red-700/50 text-red-400 px-4 py-3 text-sm">{error}</div>}
 
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={() => { setForm(emptyForm); setPagos(emptyPagos); setError(''); setUltimoRegistro(null); }} className="btn-outline-gold text-xs px-8">Limpiar</button>
+            <button type="button" onClick={() => { setForm(emptyForm); setPagos(emptyPagos); setMediosActivos(emptyMediosActivos); setError(''); setUltimoRegistro(null); }} className="btn-outline-gold text-xs px-8">Limpiar</button>
             <button type="submit" disabled={saving} className={`btn-gold text-xs flex-1 ${saving ? 'opacity-60 cursor-not-allowed' : ''}`}>
               {saving ? 'Registrando...' : 'Registrar y Generar Recibo'}
             </button>
